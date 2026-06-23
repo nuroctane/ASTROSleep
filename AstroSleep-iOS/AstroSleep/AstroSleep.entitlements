@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Background audio for sleep sessions -->
+    <key>aps-environment</key>
+    <string>production</string>
+    
+    <!-- Associated Domains for universal links -->
+    <key>com.apple.developer.associated-domains</key>
+    <array>
+        <string>applinks:astrosleep.app</string>
+    </array>
+    
+    <!-- Apple Sign-In -->
+    <key>com.apple.developer.applesignin</key>
+    <array>
+        <string>Default</string>
+    </array>
+    
+    <!-- In-App Purchase -->
+    <key>com.apple.developer.in-app-purchase</key>
+    <true/>
+    
+    <!-- Keychain sharing (optional, for family of apps) -->
+    <key>keychain-access-groups</key>
+    <array>
+        <string>$(AppIdentifierPrefix)com.astrosleep.app</string>
+    </array>
+</dict>
+</plist>

@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AstroSleep Preview</title>
+<style>
+  :root {
+    --ios-bg: #000000;
+    --ios-card: #1c1c1e;
+    --ios-card-secondary: #2c2c2e;
+    --ios-card-tertiary: #3a3a3c;
+    --ios-label: #ffffff;
+    --ios-secondary: #8e8e93;
+    --ios-accent: #5856d6;
+    --ios-accent-light: #7a78e0;
+    --ios-green: #34c759;
+    --ios-orange: #ff9500;
+    --ios-brown: #a2845e;
+    --ios-yellow: #ffcc00;
+    --ios-blue: #007aff;
+    --ios-red: #ff3b30;
+    --ios-separator: rgba(84,84,88,0.6);
+    --safe-top: env(safe-area-inset-top, 44px);
+    --safe-bottom: env(safe-area-inset-bottom, 34px);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--ios-bg); color: var(--ios-label); overflow: hidden; height: 100vh; width: 100vw;
+  }
+  #app-frame { width: 100vw; height: 100vh; overflow: hidden; position: relative; background: var(--ios-bg); }
+  .screen {
+    position: absolute; inset: 0; display: none; flex-direction: column; background: var(--ios-bg); overflow: hidden;
+  }
+  .screen > * { position: relative; z-index: 1; }
+  .screen.active { display: flex; }
+  .btn-primary {
+    background: var(--ios-accent); color: #fff; border: none; border-radius: 14px;
+    padding: 16px; font-size: 17px; font-weight: 600; width: 100%; cursor: pointer;
+  }
+  .btn-primary:active { opacity: 0.8; }
+  .btn-text { background: none; color: var(--ios-secondary); border: none; font-size: 15px; cursor: pointer; padding: 8px; }
+  .btn-secondary { background: var(--ios-card-secondary); color: var(--ios-label); border: none; border-radius: 12px; padding: 12px; font-size: 16px; cursor: pointer; }
+
+  /* Onboarding */
+  .intro-page { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 32px; text-align: center; }
+  .intro-icon { font-size: 80px; color: var(--ios-accent); margin-bottom: 24px; }
+  .intro-title { font-size: 32px; font-weight: 700; margin-bottom: 16px; }
+  .intro-desc { font-size: 17px; color: var(--ios-secondary); line-height: 1.4; }
+  .page-indicator { display: flex; justify-content: center; gap: 8px; padding: 12px 0; }
+  .page-dot { width: 8px; height: 8px; border-radius: 4px; background: var(--ios-card-tertiary); transition: .3s; }
+  .page-dot.active { background: var(--ios-accent); width: 20px; }
+
+  /* Forms */
+  .form-page { padding: 20px; overflow-y: auto; }
+  .form-page h1 { font-size: 34px; font-weight: 700; margin-bottom: 8px; }
+  .form-page .subhead { font-size: 15px; color: var(--ios-secondary); margin-bottom: 24px; }
+  .form-group { margin-bottom: 20px; }
+  .form-group label { display: block; font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+  .form-group input, .form-group textarea, .form-group select {
+    width: 100%; background: var(--ios-card-secondary); border: none; border-radius: 10px;
+    padding: 12px 14px; color: var(--ios-label); font-size: 17px; outline: none;
+  }
+  .form-group textarea { min-height: 80px; resize: none; }
+  .form-group input::placeholder, .form-group textarea::placeholder { color: var(--ios-secondary); }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; }
+  .toggle-switch {
+    width: 51px; height: 31px; background: var(--ios-card-tertiary); border-radius: 16px;
+    position: relative; cursor: pointer; transition: .3s; flex-shrink: 0;
+  }
+  .toggle-switch.on { background: var(--ios-green); }
+  .toggle-switch::after {
+    content: ''; position: absolute; width: 27px; height: 27px; border-radius: 50%;
+    background: #fff; top: 2px; left: 2px; transition: .3s; box-shadow: 0 2px 4px rgba(0,0,0,.3);
+  }
+  .toggle-switch.on::after { left: 22px; }
+
+  /* Tab Bar */
+  .tab-content { flex: 1; overflow-y: auto; padding-bottom: 80px; }
+  .tab-bar {
+    position: absolute; bottom: 0; left: 0; right: 0; height: calc(84px + var(--safe-bottom));
+    padding-bottom: var(--safe-bottom); background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-top: 0.5px solid var(--ios-separator);
+    display: flex; justify-content: space-around; align-items: flex-start; padding-top: 8px; z-index: 100;
+  }
+  .tab-item { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 12px; cursor: pointer; color: var(--ios-secondary); }
+  .tab-item.active { color: var(--ios-accent); }
+  .tab-item svg { width: 24px; height: 24px; }
+  .tab-item span { font-size: 10px; }
+
+  /* Navigation */
+  .nav-bar {
+    padding: 12px 16px; padding-top: max(12px, var(--safe-top)); display: flex; align-items: center;
+    justify-content: space-between; border-bottom: 0.5px solid var(--ios-separator); flex-shrink: 0;
+  }
+  .nav-bar .title { font-size: 17px; font-weight: 600; position: absolute; left: 50%; transform: translateX(-50%); }
+  .nav-btn { background: none; border: none; color: var(--ios-accent); font-size: 17px; cursor: pointer; }
+
+  /* Tonight */
+  .tonight-header { padding: 8px 20px 0; }
+  .tonight-header h2 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  .tonight-header p { font-size: 15px; color: var(--ios-secondary); }
+  .card { background: var(--ios-card); border-radius: 16px; padding: 16px; margin: 12px 20px; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .card-header h3 { font-size: 15px; font-weight: 600; }
+  .card-header .icon-btn { background: none; border: none; color: var(--ios-accent); cursor: pointer; }
+  .moon-row { display: flex; align-items: center; gap: 12px; }
+  .moon-icon { font-size: 32px; color: var(--ios-accent); }
+  .moon-info .label { font-size: 12px; color: var(--ios-secondary); }
+  .moon-info .value { font-size: 17px; font-weight: 600; }
+  .combo-card h4 { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+  .layer-chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+  .layer-chip { display: flex; align-items: center; gap: 6px; background: var(--ios-card-tertiary); padding: 6px 10px; border-radius: 8px; font-size: 13px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot.fire { background: var(--ios-orange); }
+  .dot.earth { background: var(--ios-brown); }
+  .dot.air { background: var(--ios-yellow); }
+  .dot.water { background: var(--ios-blue); }
+  .badge-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; color: var(--ios-secondary); }
+  .badge-auto { color: var(--ios-accent); display: flex; align-items: center; gap: 4px; }
+  .intention-section { margin: 12px 20px; }
+  .intention-section h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+  .char-count { font-size: 12px; color: var(--ios-secondary); margin-top: 6px; }
+
+  /* Sound Library */
+  .search-bar {
+    background: var(--ios-card-secondary); border-radius: 10px; padding: 10px 14px;
+    margin: 12px 20px; display: flex; align-items: center; gap: 8px; color: var(--ios-secondary);
+  }
+  .search-bar input { background: none; border: none; color: var(--ios-label); font-size: 17px; outline: none; width: 100%; }
+  .filter-chips { display: flex; gap: 8px; padding: 0 20px 12px; overflow-x: auto; }
+  .filter-chip {
+    padding: 6px 14px; border-radius: 16px; font-size: 15px; white-space: nowrap; cursor: pointer;
+    background: var(--ios-card-secondary); color: var(--ios-label); border: none;
+  }
+  .filter-chip.active { background: var(--ios-accent); color: #fff; font-weight: 600; }
+  .sound-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; padding: 0 20px; }
+  .sound-card { background: var(--ios-card); border-radius: 16px; padding: 8px; border: 0.5px solid var(--ios-separator); cursor: pointer; }
+  .sound-card .art { height: 100px; background: var(--ios-card-secondary); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 36px; position: relative; }
+  .new-badge { position: absolute; top: 8px; left: 8px; background: var(--ios-red); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+  .sound-card .info { padding: 8px 4px 4px; }
+  .sound-card .info .name { font-size: 15px; font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sound-card .meta { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ios-secondary); }
+  .score-bars { display: flex; gap: 2px; height: 4px; margin: 4px 0; }
+  .score-bar { border-radius: 2px; opacity: .7; }
+  .tag-pills { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
+  .tag-pill { font-size: 11px; font-weight: 500; background: var(--ios-card-tertiary); color: var(--ios-secondary); padding: 2px 6px; border-radius: 4px; }
+
+  /* Playback */
+  .playback-screen { background: var(--ios-bg); }
+  .playback-top { padding: 12px 20px; padding-top: max(12px, var(--safe-top)); display: flex; align-items: center; justify-content: space-between; }
+  .playback-top button { background: none; border: none; color: var(--ios-label); font-size: 22px; cursor: pointer; }
+  .playback-visual { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 32px; }
+  .element-symbol { width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 48px; }
+  .waveform { display: flex; flex-direction: column; gap: 6px; width: 70%; align-items: center; }
+  .wave-bar { height: 4px; border-radius: 2px; width: 100%; opacity: .6; animation: pulse 1.5s ease-in-out infinite alternate; }
+  @keyframes pulse { from { opacity: .3; transform: scaleX(.7); } to { opacity: .7; transform: scaleX(1); } }
+  .playback-status { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ios-secondary); }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ios-green); }
+  .playback-controls { padding: 0 24px 40px; display: flex; flex-direction: column; gap: 20px; }
+  .volume-row { display: flex; align-items: center; gap: 12px; }
+  .slider-track { flex: 1; height: 4px; background: var(--ios-card-tertiary); border-radius: 2px; position: relative; cursor: pointer; }
+  .slider-fill { height: 100%; background: var(--ios-accent); border-radius: 2px; width: 60%; pointer-events: none; }
+  .slider-thumb { position: absolute; width: 16px; height: 16px; background: #fff; border-radius: 50%; top: 50%; transform: translate(-50%, -50%); box-shadow: 0 1px 3px rgba(0,0,0,.3); cursor: pointer; }
+  .transport { display: flex; align-items: center; justify-content: center; gap: 40px; }
+  .transport button { background: none; border: none; cursor: pointer; }
+  .transport .play { font-size: 64px; color: var(--ios-accent); }
+  .transport .side { font-size: 28px; color: var(--ios-label); }
+
+  /* Settings */
+  .settings-list { padding: 0 0 20px; }
+  .settings-section { margin-top: 24px; }
+  .settings-section h4 { font-size: 13px; font-weight: 400; color: var(--ios-secondary); text-transform: uppercase; padding: 0 20px; margin-bottom: 8px; letter-spacing: 0.5px; }
+  .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: var(--ios-card); border-bottom: 0.5px solid var(--ios-separator); font-size: 17px; cursor: pointer; }
+  .settings-row .arrow { color: var(--ios-secondary); font-size: 14px; }
+  .settings-row .value { color: var(--ios-secondary); font-size: 17px; }
+  .settings-row.destructive { color: var(--ios-red); }
+  .settings-row .caption { width: 100%; font-size: 13px; color: var(--ios-secondary); margin-top: 8px; line-height: 1.4; }
+
+  /* Combo Builder & Layers */
+  .builder-list { padding: 0 0 20px; }
+  .layer-row { display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: var(--ios-card); border-bottom: 0.5px solid var(--ios-separator); }
+  .layer-row .sound-name { flex: 1; font-size: 17px; }
+  .layer-row .mini-slider { flex: 2; }
+
+  /* Library */
+  .playlist-row { display: flex; align-items: center; gap: 12px; padding: 14px 20px; background: var(--ios-card); border-bottom: 0.5px solid var(--ios-separator); cursor: pointer; }
+  .playlist-art { width: 56px; height: 56px; border-radius: 12px; background: var(--ios-card-secondary); display: flex; align-items: center; justify-content: center; font-size: 24px; }
+  .playlist-info h4 { font-size: 17px; font-weight: 600; }
+  .playlist-info p { font-size: 13px; color: var(--ios-secondary); margin-top: 2px; }
+  .empty-state { text-align: center; padding: 40px 32px; color: var(--ios-secondary); }
+
+  /* Paywall */
+  .paywall-header { text-align: center; padding: 32px 20px 16px; }
+  .paywall-header .crown { font-size: 48px; color: var(--ios-accent); }
+  .paywall-header h2 { font-size: 28px; font-weight: 700; margin: 12px 0 8px; }
+  .paywall-header p { font-size: 15px; color: var(--ios-secondary); }
+  .feature-table { margin: 0 20px; background: var(--ios-card); border-radius: 12px; overflow: hidden; }
+  .feature-row { display: flex; padding: 10px 12px; font-size: 13px; border-bottom: 0.5px solid var(--ios-separator); }
+  .feature-row .feat-name { flex: 1; }
+  .feature-row .tier { width: 50px; text-align: center; }
+  .feature-row .tier.pro { color: var(--ios-accent); font-weight: 600; }
+  .feature-row .tier.basic { color: var(--ios-blue); }
+  .product-card { margin: 12px 20px; background: var(--ios-card); border-radius: 16px; padding: 16px; border: 2px solid transparent; }
+  .product-card.popular { border-color: var(--ios-accent); position: relative; }
+  .popular-badge { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--ios-accent); color: #fff; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 12px; }
+
+  /* Filter Sheet & Bottom Sheets */
+  .bottom-sheet { background: rgba(0,0,0,.85); justify-content: flex-end; }
+  .sheet-content { background: var(--ios-card); border-radius: 24px 24px 0 0; padding: 16px 0 32px; max-height: 85vh; overflow-y: auto; }
+  .sheet-handle { width: 36px; height: 5px; background: var(--ios-card-tertiary); border-radius: 3px; margin: 0 auto 16px; }
+  .sheet-section-title { font-size: 15px; font-weight: 600; margin: 12px 20px 8px; }
+
+  /* Animations */
+  .fade-in { animation: fadeIn .3s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .slide-up { animation: slideUp .3s ease; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .slide-right { animation: slideRight .3s ease; }
+  @keyframes slideRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+  /* Scrollbar hide */
+  ::-webkit-scrollbar { display: none; }
+  .scrollable { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Color picker grids */
+  .color-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 0 20px; }
+  .color-cell { text-align: center; cursor: pointer; }
+  .color-swatch { width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 8px; }
+  .color-swatch.selected { border: 3px solid var(--ios-label); }
+
+  /* Active filter chips */
+  .active-filters { display: flex; gap: 8px; padding: 0 20px 12px; overflow-x: auto; }
+  .filter-pill { display: flex; align-items: center; gap: 4px; padding: 6px 10px; background: var(--ios-card-secondary); border-radius: 12px; font-size: 13px; }
+  .filter-pill .remove { color: var(--ios-secondary); cursor: pointer; font-size: 12px; }
+
+  /* Context Menu */
+  .context-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: none; }
+  .context-overlay.active { display: flex; align-items: flex-end; }
+  .context-sheet { background: var(--ios-card); border-radius: 24px 24px 0 0; width: 100%; padding: 12px 0 32px; animation: slideUp .25s ease; }
+  .context-row { display: flex; align-items: center; justify-content: center; padding: 14px 20px; font-size: 17px; cursor: pointer; border-bottom: 0.5px solid var(--ios-separator); }
+  .context-row:last-child { border-bottom: none; }
+  .context-row.destructive { color: var(--ios-red); }
+  .context-row.cancel { font-weight: 600; }
+
+  /* Close / X button */
+  .sheet-close { position: absolute; top: 16px; right: 16px; z-index: 10; background: var(--ios-card-tertiary); border: none; width: 32px; height: 32px; border-radius: 50%; color: var(--ios-label); font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+  /* Swipe edge detector */
+  .swipe-edge { position: absolute; top: 0; left: 0; width: 20px; height: 100%; z-index: 50; touch-action: pan-y; }
+
+  /* Messages-style filter bar */
+  .msg-filter-bar { display: flex; gap: 8px; padding: 8px 20px; overflow-x: auto; border-bottom: 0.5px solid var(--ios-separator); }
+  .msg-filter { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 16px; background: var(--ios-card-secondary); border: 1px solid var(--ios-separator); font-size: 14px; white-space: nowrap; cursor: pointer; color: var(--ios-label); }
+  .msg-filter.active { background: var(--ios-accent); color: #fff; border-color: var(--ios-accent); }
+  .msg-filter .count { background: rgba(255,255,255,0.25); font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 8px; }
+
+  /* Sound card overlay for play */
+  .sound-card { position: relative; }
+  .card-actions { position: absolute; top: 8px; right: 8px; z-index: 5; display: flex; gap: 6px; }
+  .card-action-btn { width: 28px; height: 28px; border-radius: 50%; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); border: none; color: #fff; font-size: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+  /* Voice list rows */
+  .voice-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: var(--ios-card); border-bottom: 0.5px solid var(--ios-separator); cursor: pointer; }
+  .voice-row.selected .check { color: var(--ios-accent); }
+  .voice-name { font-size: 17px; }
+  .voice-quality { font-size: 13px; color: var(--ios-secondary); }
+  .pitch-label { display: flex; justify-content: space-between; font-size: 13px; color: var(--ios-secondary); margin-top: 4px; }
+  .recording-row { display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: var(--ios-card); border-bottom: 0.5px solid var(--ios-separator); }
+</style>
+</head>
+<body>
+
+<div id="app-frame">
+
+<!-- Swipe from left edge detector -->
+<div class="swipe-edge" id="swipe-edge"></div>
+
+<!-- Context Menu Overlay -->
+<div class="context-overlay" id="context-overlay" onclick="closeContextMenu(event)">
+  <div class="context-sheet" id="context-sheet" onclick="event.stopPropagation()">
+    <div class="context-row" onclick="contextPreview()">▶ Preview</div>
+    <div class="context-row" onclick="contextAddToCombo()">+ Add to Combo</div>
+    <div class="context-row" onclick="contextDetails()">ℹ Sound Details</div>
+    <div class="context-row destructive cancel" onclick="closeContextMenu()">Cancel</div>
+  </div>
+</div>
+
+<!-- ==================== ONBOARDING: INTRO ==================== -->
+<div id="scr-onboarding-intro" class="screen active">
+  <div class="intro-page" id="intro-page-0">
+    <div class="intro-icon">🌙</div>
+    <div class="intro-title">Sleep with Intention</div>
+    <div class="intro-desc">AstroSleep curates your sonic environment based on your astrological chart and the current night sky.</div>
+  </div>
+  <div class="page-indicator">
+    <div class="page-dot active" data-idx="0"></div>
+    <div class="page-dot" data-idx="1"></div>
+    <div class="page-dot" data-idx="2"></div>
+  </div>
+  <div style="padding: 0 24px 32px;">
+    <button class="btn-primary" onclick="goToOnboardingBirth()">Get Started</button>
+    <div style="text-align:center; margin-top:8px;"><button class="btn-text" onclick="goToOnboardingBirth()">Skip</button></div>
+  </div>
+</div>
+
+<!-- ==================== ONBOARDING: BIRTH DATA ==================== -->
+<div id="scr-onboarding-birth" class="screen">
+  <div class="nav-bar" style="border:none; justify-content:flex-start;">
+    <button class="nav-btn" style="color:var(--ios-secondary);" onclick="showScreen('scr-onboarding-intro')">← Back</button>
+  </div>
+  <div class="form-page scrollable">
+    <h1>Birth Data</h1>
+    <p class="subhead">Your birth data is stored only on this device and is never uploaded.</p>
+    <div class="form-group">
+      <label>Full Name</label>
+      <input type="text" placeholder="Enter your name" id="ob-name">
+    </div>
+    <div class="form-group">
+      <label>Date of Birth</label>
+      <input type="date" id="ob-date" value="2000-01-01">
+    </div>
+    <div class="form-group">
+      <label>Birth Time</label>
+      <input type="time" id="ob-time" value="12:00">
+      <p style="font-size:13px; color:var(--ios-secondary); margin-top:6px; line-height:1.4;">If you're unsure of your birth time, midnight will be used for chart calculation.</p>
+    </div>
+    <div class="form-group">
+      <label>City of Birth</label>
+      <input type="text" placeholder="e.g., New York, NY" id="ob-city">
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:24px;">
+      <span style="color:var(--ios-green); font-size:14px;">🔒</span>
+      <span style="font-size:13px; color:var(--ios-secondary);">Your birth data is private</span>
+    </div>
+    <button class="btn-primary" onclick="goToOnboardingComplete()">Compute My Chart</button>
+  </div>
+</div>
+
+<!-- ==================== ONBOARDING: COMPLETE ==================== -->
+<div id="scr-onboarding-complete" class="screen">
+  <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 32px; text-align:center;">
+    <div style="font-size:80px; color:var(--ios-green); margin-bottom:24px;">✓</div>
+    <div class="intro-title">You're All Set</div>
+    <div class="intro-desc">Your astrological profile has been computed and stored securely on this device.</div>
+  </div>
+  <div style="padding: 0 24px 32px;">
+    <button class="btn-primary" onclick="enterMainApp()">Begin Tonight</button>
+  </div>
+</div>
+
+<!-- ==================== MAIN APP SHELL ==================== -->
+<div id="scr-main" class="screen">
+  <div class="tab-content scrollable" id="tab-content"></div>
+  <div class="tab-bar">
+    <div class="tab-item active" data-tab="tonight" onclick="switchTab('tonight')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <span>Tonight</span>
+    </div>
+    <div class="tab-item" data-tab="sounds" onclick="switchTab('sounds')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+      <span>Sounds</span>
+    </div>
+    <div class="tab-item" data-tab="library" onclick="switchTab('library')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+      <span>Library</span>
+    </div>
+    <div class="tab-item" data-tab="settings" onclick="switchTab('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1.51 1H15a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Settings</span>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PLAYBACK ==================== -->
+<div id="scr-playback" class="screen playback-screen">
+  <div class="playback-top">
+    <button onclick="exitPlayback()">↓</button>
+    <div style="font-size:17px; font-weight:600;" id="playback-title">Tonight's Mix</div>
+    <button onclick="showScreen('scr-sleep-timer')">⏱</button>
+  </div>
+  <div class="playback-visual">
+    <div class="element-symbol" id="playback-symbol" style="background:color-mix(in srgb, var(--ios-accent) 20%, transparent); color:var(--ios-accent);">🔥</div>
+    <div class="waveform" id="playback-waveform">
+      <div class="wave-bar" style="background:var(--ios-orange);"></div>
+      <div class="wave-bar" style="background:var(--ios-blue); animation-delay:.2s;"></div>
+      <div class="wave-bar" style="background:var(--ios-brown); animation-delay:.4s;"></div>
+    </div>
+    <div class="playback-status">
+      <div class="status-dot" id="playback-status-dot"></div>
+      <span id="playback-status-text">Playing</span>
+    </div>
+  </div>
+  <div class="playback-controls">
+    <div class="volume-row">
+      <span style="font-size:14px; color:var(--ios-secondary);">🔊</span>
+      <div class="slider-track" id="master-volume-track" onclick="setVolume(event, 'master')"><div class="slider-fill" id="master-volume-fill" style="width:60%"></div><div class="slider-thumb" id="master-volume-thumb" style="left:60%"></div></div>
+      <span style="font-size:14px; color:var(--ios-secondary);">🔊</span>
+    </div>
+    <div class="transport">
+      <button class="side" style="color:var(--ios-red);" onclick="stopPlayback()">⏹</button>
+      <button class="play" id="play-btn" onclick="togglePlay()">⏸</button>
+      <button class="side" onclick="showScreen('scr-layer-panel')">⚙</button>
+    </div>
+    <button class="btn-text" style="color:var(--ios-accent); font-size:15px; margin-top:8px;" onclick="saveCurrentCombo()">💾 Save This Combo</button>
+  </div>
+</div>
+
+<!-- ==================== SLEEP TIMER SHEET ==================== -->
+<div id="scr-sleep-timer" class="screen bottom-sheet">
+  <div class="sheet-content" style="position:relative;">
+    <button class="sheet-close" onclick="showScreen('scr-playback')">✕</button>
+    <div class="sheet-handle"></div>
+    <div style="padding:0 20px; margin-top:8px;">
+      <div style="font-size:20px; font-weight:700; margin-bottom:16px;">Sleep Timer</div>
+      <div class="settings-row" style="border-radius:12px; margin-bottom:8px; cursor:pointer;" onclick="setSleepTimer(30)">
+        <span>30 minutes</span><span class="arrow" id="timer-30"></span>
+      </div>
+      <div class="settings-row" style="border-radius:12px; margin-bottom:8px; cursor:pointer;" onclick="setSleepTimer(60)">
+        <span>60 minutes</span><span class="arrow" id="timer-60">✓</span>
+      </div>
+      <div class="settings-row" style="border-radius:12px; margin-bottom:8px; cursor:pointer;" onclick="setSleepTimer(90)">
+        <span>90 minutes</span><span class="arrow" id="timer-90"></span>
+      </div>
+      <div class="settings-row" style="border-radius:12px; cursor:pointer;" onclick="setSleepTimer(0)">
+        <span>Off</span><span class="arrow" id="timer-0"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== LAYER PANEL ==================== -->
+<div id="scr-layer-panel" class="screen">
+  <div class="nav-bar">
+    <button class="nav-btn" onclick="showScreen('scr-playback')">Done</button>
+    <div class="title">Layers</div>
+    <div></div>
+  </div>
+  <div class="builder-list scrollable" id="layer-panel-list">
+    <!-- rendered by JS -->
+  </div>
+</div>
+
+<!-- ==================== COMBO BUILDER ==================== -->
+<div id="scr-combo-builder" class="screen">
+  <div class="nav-bar">
+    <button class="nav-btn" onclick="showScreen('scr-main')">Done</button>
+    <div class="title">Combo Builder</div>
+    <div></div>
+  </div>
+  <div class="builder-list scrollable" id="combo-builder-list">
+    <!-- rendered by JS -->
+  </div>
+</div>
+
+<!-- ==================== PAYWALL ==================== -->
+<div id="scr-paywall" class="screen">
+  <div class="nav-bar">
+    <button class="nav-btn" onclick="showScreen('scr-main')">Close</button>
+    <div></div><div></div>
+  </div>
+  <div class="scrollable">
+    <div class="paywall-header">
+      <div class="crown">👑</div>
+      <h2>Unlock Your Full Potential</h2>
+      <p>Get personalized astrological sleep sessions with advanced features.</p>
+    </div>
+    <div style="margin:0 20px 16px;"><h3 style="font-size:17px; font-weight:600;">What's Included</h3></div>
+    <div class="feature-table">
+      <div class="feature-row" style="background:var(--ios-card-tertiary); font-weight:600;">
+        <span class="feat-name"></span>
+        <span class="tier">Free</span>
+        <span class="tier basic">Sub</span>
+        <span class="tier pro">Pro</span>
+      </div>
+      <div class="feature-row"><span class="feat-name">Sound Recommendations</span><span class="tier">✓</span><span class="tier basic">✓</span><span class="tier pro">✓</span></div>
+      <div class="feature-row"><span class="feat-name">Combo Layers</span><span class="tier">2</span><span class="tier basic">7</span><span class="tier pro">7</span></div>
+      <div class="feature-row"><span class="feat-name">Transit Scoring</span><span class="tier">✓</span><span class="tier basic">✓</span><span class="tier pro">✓</span></div>
+      <div class="feature-row"><span class="feat-name">Oscillation / LFO</span><span class="tier">✓</span><span class="tier basic">✓</span><span class="tier pro">✓</span></div>
+      <div class="feature-row"><span class="feat-name">Saved Playlists</span><span class="tier">5</span><span class="tier basic">∞</span><span class="tier pro">∞</span></div>
+      <div class="feature-row"><span class="feat-name">Session History</span><span class="tier">14d</span><span class="tier basic">∞</span><span class="tier pro">∞</span></div>
+      <div class="feature-row"><span class="feat-name">Custom Voice Recording</span><span class="tier">—</span><span class="tier basic">✓</span><span class="tier pro">✓</span></div>
+      <div class="feature-row"><span class="feat-name">Future Features</span><span class="tier">—</span><span class="tier basic">✓</span><span class="tier pro">✓</span></div>
+    </div>
+    <div class="product-card" style="margin-top:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <div style="font-size:22px; font-weight:700;">Subscription</div>
+          <div style="font-size:15px; color:var(--ios-secondary); margin-top:4px;">Monthly access to enhanced features</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:20px; font-weight:600;">$7.99</div>
+          <div style="font-size:13px; color:var(--ios-secondary);">/month</div>
+        </div>
+      </div>
+      <button class="btn-primary" style="margin-top:16px;" onclick="setTier('subscription')">Start 7-Day Free Trial</button>
+    </div>
+    <div class="product-card popular" style="margin-top:12px;">
+      <div class="popular-badge">Best Value</div>
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <div style="font-size:22px; font-weight:700;">Pro — One Time</div>
+          <div style="font-size:15px; color:var(--ios-secondary); margin-top:4px;">Full app forever. All future updates included.</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:20px; font-weight:600;">$79.99</div>
+          <div style="font-size:13px; color:var(--ios-green); font-weight:600;">One-time</div>
+        </div>
+      </div>
+      <div style="margin-top:8px; font-size:13px; color:var(--ios-secondary); line-height:1.4;">
+        Pay once. Own forever. Includes every new feature and update we ship, no matter what.
+      </div>
+      <button class="btn-primary" style="margin-top:12px;" onclick="setTier('lifetime')">Unlock Pro Forever</button>
+    </div>
+    <div style="text-align:center; padding:24px 20px;">
+      <button class="btn-text" style="color:var(--ios-accent); font-size:15px;" onclick="restorePurchases()">Restore Purchases</button>
+      <p style="font-size:11px; color:var(--ios-secondary); margin-top:12px; line-height:1.4;">Subscription auto-renews monthly. Cancel anytime in App Store settings. One-time Pro is a non-consumable in-app purchase.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== APPEARANCE MODE ==================== -->
+<div id="scr-appearance" class="screen">
+  <div class="nav-bar">
+    <button class="nav-btn" onclick="showScreen('scr-main')">← Back</button>
+    <div class="title">Appearance Mode</div>
+    <div></div>
+  </div>
+  <div class="form-page scrollable">
+    <div class="form-group">
+      <label style="display:block; margin-bottom:12px; font-size:17px;">Appearance</label>
+      <div style="display:flex; gap:8px;">
+        <button class="filter-chip active" id="app-system" style="flex:1; text-align:center; padding:12px;" onclick="setAppearance('system')">System</button>
+        <button class="filter-chip" id="app-light" style="flex:1; text-align:center; padding:12px;" onclick="setAppearance('light')">Light</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== ACCENT COLOR PICKER ==================== -->
+<div id="scr-accent-picker" class="screen">
+  <div class="nav-bar">
+    <button class="nav-btn" onclick="showScreen('scr-main')">← Back</button>
+    <div class="title">Accent Color</div>
+    <div></div>
+  </div>
+  <div class="scrollable" style="padding:20px;">
+    <div style="text-align:center; margin-bottom:24px;">
+      <div style="font-size:15px; color:var(--ios-secondary); margin-bottom:12px;">Preview</div>
+      <div style="background:var(--ios-card); border-radius:16px; padding:24px;">
+        <button class="btn-primary" style="margin-bottom:12px;" id="accent-preview-btn">Sample Button</button>
+        <div class="toggle-switch on" style="margin:0 auto;"></div>
+      </div>
+    </div>
+    <div style="font-size:17px; font-weight:600; margin-bottom:16px;">Presets</div>
+    <div class="color-grid" id="accent-grid"></div>
+  </div>
+</div>
+
+<!-- ==================== BACKGROUND COLOR PICKER ==================== -->
+<div id="scr-bg-picker" class="screen">
+  <div class="nav-bar">
+    <button class="nav-btn" onclick="showScreen('scr-main')">← Back</button>
+    <div class="title">Background Color</div>
+    <div></div>
+  </div>
+  <div class="scrollable" style="padding:20px;">
+    <div style="text-align:center; margin-bottom:24px;">
+      <div style="font-size:15px; color:var(--ios-secondary); margin-bottom:12px;">Preview</div>
+      <div style="background:var(--ios-card); border-radius:16px; padding:24px;">
+        <div style="height:80px; background:var(--ios-card-secondary); border-radius:12px; border:0.5px solid var(--ios-separator);" id="bg-preview-box"></div>
+      </div>
+    </div>
+    <div style="font-size:17px; font-weight:600; margin-bottom:16px;">Presets</div>
+    <div class="color-grid" id="bg-grid"></div>
+  </div>
+</div>
+
+<!-- ==================== SOUND FILTER SHEET ==================== -->
+<div id="scr-sound-filters" class="screen bottom-sheet">
+  <div class="sheet-content scrollable" style="position:relative;">
+    <button class="sheet-close" onclick="closeFilterSheet()">✕</button>
+    <div class="sheet-handle"></div>
+    <div style="padding:0 20px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; margin-top:8px;">
+        <div style="font-size:20px; font-weight:700;">Filters</div>
+        <button class="btn-text" style="color:var(--ios-accent);" onclick="resetFilters()">Reset</button>
+      </div>
+      <div id="filter-dimensions"></div>
+      <button class="btn-primary" style="margin-top:16px;" onclick="closeFilterSheet()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SOUND DETAIL SHEET ==================== -->
+<div id="scr-sound-detail" class="screen bottom-sheet">
+  <div class="sheet-content scrollable" style="position:relative;">
+    <button class="sheet-close" onclick="showScreen('scr-main'); switchTab('sounds');">✕</button>
+    <div class="sheet-handle"></div>
+    <div style="padding:0 20px; margin-top:8px;" id="sound-detail-content"></div>
+  </div>
+</div>
+
+<!-- ==================== PROFILE EDIT ==================== -->
+<div id="scr-profile-edit" class="screen">
+  <div class="nav-bar">
+    <button class="nav-btn" onclick="showScreen('scr-main')">← Back</button>
+    <div class="title">Edit Profile</div>
+    <div></div>
+  </div>
+  <div class="form-page scrollable">
+    <div class="form-group"><label>Name</label><input type="text" id="pe-name"></div>
+    <div class="form-group"><label>Birth Date</label><input type="date" id="pe-date"></div>
+    <div class="form-group"><label>Birth Time</label><input type="time" id="pe-time"></div>
+    <div class="form-group"><label>City of Birth</label><input type="text" id="pe-city"></div>
+    <button class="btn-primary" onclick="saveProfile()">Save & Recompute Chart</button>
+  </div>
+</div>
+
+<!-- ==================== CURRENT LOCATION EDIT ==================== -->
+<div id="scr-location-edit" class="screen">
+  <div class="nav-bar">
+    <button class="nav-btn" onclick="showScreen('scr-main')">← Back</button>
+    <div class="title">Current Location</div>
+    <div></div>
+  </div>
+  <div class="form-page scrollable">
+    <div class="form-group">
+      <label>Current City</label>
+      <input type="text" id="loc-city" placeholder="e.g., Los Angeles, CA">
+      <p style="font-size:13px; color:var(--ios-secondary); margin-top:8px; line-height:1.4;">Enter your current city for accurate transit house placement.</p>
+    </div>
+    <button class="btn-primary" onclick="saveLocation()">Save & Recompute Transits</button>
+  </div>
+</div>
+
+<!-- ==================== AFFIRMATION SETTINGS ==================== -->
+<div id="scr-affirmation-settings" class="screen">
+  <div class="nav-bar">
+    <button class="nav-btn" onclick="showScreen('scr-main')">← Back</button>
+    <div class="title">Voice & Speed</div>
+    <div></div>
+  </div>
+  <div class="form-page scrollable">
+    <div class="settings-section"><h4>Siri & On-Device Voices</h4></div>
+    <div id="voice-list">
+      <div class="voice-row" data-voice="siri-female-en" onclick="selectVoice(this)">
+        <div><div class="voice-name">Siri (US) — Female</div><div class="voice-quality">Enhanced · On-device</div></div>
+        <div class="check" style="color:var(--ios-secondary);">✓</div>
+      </div>
+      <div class="voice-row" data-voice="siri-male-en" onclick="selectVoice(this)">
+        <div><div class="voice-name">Siri (US) — Male</div><div class="voice-quality">Enhanced · On-device</div></div>
+        <div class="check" style="color:var(--ios-secondary);">✓</div>
+      </div>
+      <div class="voice-row" data-voice="siri-female-uk" onclick="selectVoice(this)">
+        <div><div class="voice-name">Siri (UK) — Female</div><div class="voice-quality">Enhanced · On-device</div></div>
+        <div class="check" style="color:var(--ios-secondary);">✓</div>
+      </div>
+      <div class="voice-row" data-voice="siri-male-uk" onclick="selectVoice(this)">
+        <div><div class="voice-name">Siri (UK) — Male</div><div class="voice-quality">Enhanced · On-device</div></div>
+        <div class="check" style="color:var(--ios-secondary);">✓</div>
+      </div>
+      <div class="voice-row" data-voice="siri-female-au" onclick="selectVoice(this)">
+        <div><div class="voice-name">Siri (AU) — Female</div><div class="voice-quality">Enhanced · On-device</div></div>
+        <div class="check" style="color:var(--ios-secondary);">✓</div>
+      </div>
+      <div class="voice-row" data-voice="siri-male-au" onclick="selectVoice(this)">
+        <div><div class="voice-name">Siri (AU) — Male</div><div class="voice-quality">Enhanced · On-device</div></div>
+        <div class="check" style="color:var(--ios-secondary);">✓</div>
+      </div>
+    </div>
+
+    <div class="settings-section"><h4>My Recordings</h4></div>
+    <div id="recording-list">
+      <div class="recording-row">
+        <span style="color:var(--ios-secondary);">🎙</span>
+        <span style="color:var(--ios-secondary); font-size:15px;">No personal recordings yet</span>
+      </div>
+    </div>
+
+    <div class="settings-section"><h4>Playback Speed</h4></div>
+    <div style="padding:0 20px 8px;">
+      <div class="slider-track" id="speed-slider-track" onclick="setSpeed(event)"><div class="slider-fill" id="speed-slider-fill" style="width:50%"></div><div class="slider-thumb" id="speed-slider-thumb" style="left:50%"></div></div>
+      <div class="pitch-label"><span>Slow</span><span id="speed-display">1.00x</span><span>Fast</span></div>
+    </div>
+
+    <div class="settings-section"><h4>Pitch Shift</h4></div>
+    <div style="padding:0 20px 8px;">
+      <div class="slider-track" id="pitch-slider-track" onclick="setPitch(event)"><div class="slider-fill" id="pitch-slider-fill" style="width:50%"></div><div class="slider-thumb" id="pitch-slider-thumb" style="left:50%"></div></div>
+      <div class="pitch-label"><span>Lower</span><span id="pitch-display">0 semitones</span><span>Higher</span></div>
+      <p style="font-size:13px; color:var(--ios-secondary); margin-top:8px; line-height:1.4;">Adjust pitch independently from speed to avoid chipmunk or guttural artifacts.</p>
+    </div>
+
+    <div style="padding:20px;">
+      <button class="btn-primary" onclick="saveAffirmationSettings()">Save Voice Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLEEP TIMER SETTINGS ==================== -->
+<div id="scr-timer-settings" class="screen">
+  <div class="nav-bar">
+    <button class="nav-btn" onclick="showScreen('scr-main')">← Back</button>
+    <div class="title">Sleep Timer Default</div>
+    <div></div>
+  </div>
+  <div class="form-page scrollable">
+    <div class="form-group">
+      <label>Default Timer</label>
+      <select id="timer-default"><option value="30">30 minutes</option><option value="60">60 minutes</option><option value="90">90 minutes</option><option value="120">120 minutes</option></select>
+    </div>
+    <button class="btn-primary" onclick="saveTimerSettings()">Save Default</button>
+  </div>
+</div>
+
+</div><!-- /app-frame -->
+
+<script>
+/* ================================================================
+   ASTROSLEEP LOCALIZED PREVIEW — v3.2
+   All logic tied to current codebase except actual audio playback.
+   ================================================================ */
+
+// ---- Data: 24 Sounds from sounds_manifest.json ----
+const SOUNDS = [
+  { id: "heavy_rain", name: "Heavy Rain", tags: { domain: "water", rhythm: "irregular", register: "mid", context: "nature", weight: "heavy", texture: "rough", motion: "flowing", density: "dense", temperature: "cool", polarity: "receptive", celestial: "lunar", archetype: "mother" }, elementScores: { fire: 0.45, earth: 0.82, air: 0.38, water: 0.91 }, durationSeconds: 60, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/heavy_rain.m4a", bundleFilename: "heavy_rain.m4a" },
+  { id: "light_rain", name: "Light Rain", tags: { domain: "water", rhythm: "irregular", register: "bright", context: "nature", weight: "light", texture: "crystalline", motion: "flowing", density: "sparse", temperature: "cool", polarity: "receptive", celestial: "lunar", archetype: "maiden" }, elementScores: { fire: 0.32, earth: 0.45, air: 0.55, water: 0.78 }, durationSeconds: 45, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/light_rain.m4a", bundleFilename: "light_rain.m4a" },
+  { id: "thunder", name: "Thunderstorm", tags: { domain: "electrical", rhythm: "chaotic", register: "full", context: "nature", weight: "massive", texture: "rough", motion: "surging", density: "saturated", temperature: "cool", polarity: "active", celestial: "planetary", archetype: "shadow" }, elementScores: { fire: 0.88, earth: 0.65, air: 0.72, water: 0.41 }, durationSeconds: 90, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/thunder.m4a", bundleFilename: "thunder.m4a" },
+  { id: "ocean", name: "Ocean Waves", tags: { domain: "water", rhythm: "pulse", register: "deep", context: "nature", weight: "medium", texture: "smooth", motion: "flowing", density: "dense", temperature: "cool", polarity: "receptive", celestial: "lunar", archetype: "mother" }, elementScores: { fire: 0.28, earth: 0.48, air: 0.35, water: 0.89 }, durationSeconds: 60, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/ocean.m4a", bundleFilename: "ocean.m4a" },
+  { id: "river", name: "River / Stream", tags: { domain: "water", rhythm: "rhythmic", register: "mid", context: "nature", weight: "medium", texture: "rough", motion: "flowing", density: "moderate", temperature: "cool", polarity: "receptive", celestial: "planetary", archetype: "mentor" }, elementScores: { fire: 0.35, earth: 0.62, air: 0.42, water: 0.81 }, durationSeconds: 60, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/river.m4a", bundleFilename: "river.m4a" },
+  { id: "forest", name: "Forest / Birds", tags: { domain: "organic", rhythm: "arrhythmic", register: "full", context: "nature", weight: "light", texture: "diffuse", motion: "drifting", density: "moderate", temperature: "neutral", polarity: "balanced", celestial: "stellar", archetype: "trickster" }, elementScores: { fire: 0.42, earth: 0.58, air: 0.48, water: 0.52 }, durationSeconds: 90, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/forest.m4a", bundleFilename: "forest.m4a" },
+  { id: "wind", name: "Wind", tags: { domain: "air", rhythm: "irregular", register: "bright", context: "nature", weight: "medium", texture: "diffuse", motion: "swirling", density: "sparse", temperature: "cool", polarity: "active", celestial: "planetary", archetype: "trickster" }, elementScores: { fire: 0.55, earth: 0.25, air: 0.88, water: 0.32 }, durationSeconds: 60, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/wind.m4a", bundleFilename: "wind.m4a" },
+  { id: "fire", name: "Fire / Crackling", tags: { domain: "fire", rhythm: "irregular", register: "mid", context: "nature", weight: "medium", texture: "rough", motion: "surging", density: "moderate", temperature: "hot", polarity: "active", celestial: "solar", archetype: "hero" }, elementScores: { fire: 0.92, earth: 0.35, air: 0.48, water: 0.25 }, durationSeconds: 60, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/fire.m4a", bundleFilename: "fire.m4a" },
+  { id: "white_noise", name: "White Noise", tags: { domain: "electrical", rhythm: "steady", register: "full", context: "abstract", weight: "medium", texture: "smooth", motion: "static", density: "saturated", temperature: "neutral", polarity: "neutral", celestial: "void", archetype: "crone" }, elementScores: { fire: 0.48, earth: 0.52, air: 0.51, water: 0.49 }, durationSeconds: 30, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/white_noise.m4a", bundleFilename: "white_noise.m4a" },
+  { id: "brown_noise", name: "Brown Noise", tags: { domain: "earth", rhythm: "steady", register: "sub", context: "abstract", weight: "medium", texture: "smooth", motion: "static", density: "dense", temperature: "cool", polarity: "receptive", celestial: "planetary", archetype: "mother" }, elementScores: { fire: 0.25, earth: 0.88, air: 0.22, water: 0.65 }, durationSeconds: 30, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/brown_noise.m4a", bundleFilename: "brown_noise.m4a" },
+  { id: "pink_noise", name: "Pink Noise", tags: { domain: "electrical", rhythm: "steady", register: "full", context: "abstract", weight: "light", texture: "smooth", motion: "static", density: "moderate", temperature: "neutral", polarity: "balanced", celestial: "stellar", archetype: "mentor" }, elementScores: { fire: 0.42, earth: 0.48, air: 0.55, water: 0.45 }, durationSeconds: 30, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/pink_noise.m4a", bundleFilename: "pink_noise.m4a" },
+  { id: "binaural", name: "Tibetan / Binaural", tags: { domain: "cosmic", rhythm: "pulse", register: "sub", context: "spiritual", weight: "ethereal", texture: "crystalline", motion: "oscillating", density: "sparse", temperature: "cool", polarity: "receptive", celestial: "stellar", archetype: "crone" }, elementScores: { fire: 0.35, earth: 0.72, air: 0.68, water: 0.45 }, durationSeconds: 120, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/binaural.m4a", bundleFilename: "binaural.m4a" },
+  { id: "sprinklers", name: "Sprinklers", tags: { domain: "mechanical", rhythm: "pulse", register: "bright", context: "domestic", weight: "light", texture: "crystalline", motion: "pulsing", density: "sparse", temperature: "cool", polarity: "active", celestial: "planetary", archetype: "maiden" }, elementScores: { fire: 0.48, earth: 0.58, air: 0.62, water: 0.32 }, durationSeconds: 45, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/sprinklers.m4a", bundleFilename: "sprinklers.m4a" },
+  { id: "fan_low", name: "Box Fan (Low)", tags: { domain: "mechanical", rhythm: "steady", register: "deep", context: "domestic", weight: "light", texture: "smooth", motion: "static", density: "moderate", temperature: "cool", polarity: "neutral", celestial: "planetary", archetype: "mentor" }, elementScores: { fire: 0.32, earth: 0.68, air: 0.45, water: 0.35 }, durationSeconds: 60, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/fan_low.m4a", bundleFilename: "fan_low.m4a" },
+  { id: "fan_med", name: "Box Fan (Med)", tags: { domain: "mechanical", rhythm: "steady", register: "mid", context: "domestic", weight: "medium", texture: "smooth", motion: "static", density: "moderate", temperature: "cool", polarity: "neutral", celestial: "planetary", archetype: "mentor" }, elementScores: { fire: 0.35, earth: 0.65, air: 0.48, water: 0.32 }, durationSeconds: 60, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/fan_med.m4a", bundleFilename: "fan_med.m4a" },
+  { id: "fan_high", name: "Box Fan (High)", tags: { domain: "air", rhythm: "steady", register: "bright", context: "domestic", weight: "medium", texture: "diffuse", motion: "swirling", density: "moderate", temperature: "cool", polarity: "active", celestial: "planetary", archetype: "hero" }, elementScores: { fire: 0.55, earth: 0.35, air: 0.82, water: 0.28 }, durationSeconds: 60, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/fan_high.m4a", bundleFilename: "fan_high.m4a" },
+  { id: "wtfl_sm", name: "Small Waterfall", tags: { domain: "water", rhythm: "steady", register: "bright", context: "nature", weight: "medium", texture: "crystalline", motion: "flowing", density: "moderate", temperature: "cool", polarity: "receptive", celestial: "lunar", archetype: "maiden" }, elementScores: { fire: 0.38, earth: 0.52, air: 0.48, water: 0.72 }, durationSeconds: 60, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/wtfl_sm.m4a", bundleFilename: "wtfl_sm.m4a" },
+  { id: "wtfl_lg", name: "Large Waterfall", tags: { domain: "water", rhythm: "steady", register: "sub", context: "nature", weight: "heavy", texture: "rough", motion: "surging", density: "dense", temperature: "cool", polarity: "active", celestial: "lunar", archetype: "mother" }, elementScores: { fire: 0.42, earth: 0.65, air: 0.35, water: 0.88 }, durationSeconds: 90, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/wtfl_lg.m4a", bundleFilename: "wtfl_lg.m4a" },
+  { id: "car_rain", name: "Car in Rain", tags: { domain: "mechanical", rhythm: "rhythmic", register: "mid", context: "urban", weight: "medium", texture: "smooth", motion: "flowing", density: "dense", temperature: "cool", polarity: "receptive", celestial: "planetary", archetype: "shadow" }, elementScores: { fire: 0.35, earth: 0.62, air: 0.48, water: 0.55 }, durationSeconds: 60, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/car_rain.m4a", bundleFilename: "car_rain.m4a" },
+  { id: "dryer", name: "Clothes Dryer", tags: { domain: "mechanical", rhythm: "pulse", register: "deep", context: "domestic", weight: "medium", texture: "smooth", motion: "swirling", density: "moderate", temperature: "warm", polarity: "receptive", celestial: "planetary", archetype: "mother" }, elementScores: { fire: 0.42, earth: 0.72, air: 0.38, water: 0.48 }, durationSeconds: 60, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/dryer.m4a", bundleFilename: "dryer.m4a" },
+  { id: "lawn_mower", name: "Lawn Mower (Distant)", tags: { domain: "mechanical", rhythm: "steady", register: "deep", context: "urban", weight: "heavy", texture: "rough", motion: "static", density: "dense", temperature: "neutral", polarity: "active", celestial: "planetary", archetype: "hero" }, elementScores: { fire: 0.52, earth: 0.78, air: 0.42, water: 0.28 }, durationSeconds: 60, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/lawn_mower.m4a", bundleFilename: "lawn_mower.m4a" },
+  { id: "clock_tick", name: "Clock Ticking", tags: { domain: "mechanical", rhythm: "pulse", register: "bright", context: "domestic", weight: "light", texture: "crystalline", motion: "pulsing", density: "sparse", temperature: "neutral", polarity: "balanced", celestial: "planetary", archetype: "crone" }, elementScores: { fire: 0.42, earth: 0.55, air: 0.62, water: 0.41 }, durationSeconds: 30, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/clock_tick.m4a", bundleFilename: "clock_tick.m4a" },
+  { id: "sink_faucet", name: "Sink Faucet", tags: { domain: "water", rhythm: "steady", register: "bright", context: "domestic", weight: "light", texture: "smooth", motion: "flowing", density: "sparse", temperature: "cool", polarity: "receptive", celestial: "lunar", archetype: "maiden" }, elementScores: { fire: 0.32, earth: 0.45, air: 0.52, water: 0.71 }, durationSeconds: 45, isNew: false, version: 1, cdnUrl: "https://cdn.astrosleep.app/sounds/sink_faucet.m4a", bundleFilename: "sink_faucet.m4a" }
+];
+
+const TAG_DIMENSIONS = [
+  { key: "domain", label: "Domain", values: ["water","air","fire","earth","mechanical","organic","electrical","cosmic"] },
+  { key: "rhythm", label: "Rhythm", values: ["steady","pulse","irregular","chaotic","rhythmic","arrhythmic"] },
+  { key: "register", label: "Register", values: ["sub","deep","mid","bright","full","ultrasonic"] },
+  { key: "context", label: "Context", values: ["nature","domestic","abstract","urban","industrial","spiritual"] },
+  { key: "weight", label: "Weight", values: ["ethereal","light","medium","heavy","massive"] },
+  { key: "texture", label: "Texture", values: ["smooth","rough","crystalline","diffuse","granular","glassy","metallic"] },
+  { key: "motion", label: "Motion", values: ["static","flowing","surging","swirling","oscillating","drifting","pulsing"] },
+  { key: "density", label: "Density", values: ["vacuum","sparse","moderate","dense","saturated"] },
+  { key: "temperature", label: "Temperature", values: ["cold","cool","neutral","warm","hot"] },
+  { key: "polarity", label: "Polarity", values: ["active","receptive","balanced","neutral"] },
+  { key: "celestial", label: "Celestial", values: ["solar","lunar","stellar","planetary","void"] },
+  { key: "archetype", label: "Archetype", values: ["maiden","mother","crone","hero","mentor","shadow","trickster"] }
+];
+
+const DIMENSION_WEIGHTS = { domain: 9.0, celestial: 4.0, archetype: 4.0, rhythm: 3.0, motion: 3.0, register: 2.0, context: 2.0, weight: 2.0, texture: 2.0, density: 2.0, temperature: 2.0, polarity: 2.0 };
+
+const TAG_VECTORS = {
+  domain: { water: [0.5,1.5,1.0,9.0], air: [1.5,0.5,9.0,1.0], fire: [9.0,0.5,1.5,0.5], earth: [0.5,9.0,0.5,1.5], mechanical: [1.5,6.0,2.0,1.0], organic: [1.0,5.0,1.5,4.0], electrical: [3.0,1.0,7.0,0.5], cosmic: [4.0,1.0,6.0,2.0] },
+  rhythm: { steady: [0.0,3.0,0.5,1.5], pulse: [1.0,2.0,1.0,1.5], irregular: [2.0,0.0,2.0,1.5], chaotic: [3.0,0.0,2.5,0.5], rhythmic: [1.5,2.0,1.0,2.0], arrhythmic: [1.0,0.0,2.0,2.0] },
+  register: { sub: [0.0,3.0,0.0,2.0], deep: [0.0,2.5,0.0,1.5], mid: [1.0,1.5,1.0,1.0], bright: [1.5,0.5,2.5,0.0], full: [1.0,1.0,1.0,1.0], ultrasonic: [0.5,0.0,3.0,0.0] },
+  context: { nature: [1.0,1.0,1.0,1.0], domestic: [0.0,2.0,0.5,1.5], abstract: [0.5,0.0,2.0,1.0], urban: [1.5,1.0,2.0,0.5], industrial: [1.0,3.0,1.5,0.0], spiritual: [1.0,0.5,2.0,2.5] },
+  weight: { ethereal: [0.0,0.0,2.0,1.0], light: [0.0,0.0,1.5,1.5], medium: [1.0,1.5,0.5,0.5], heavy: [2.5,1.0,1.0,0.5], massive: [2.0,3.0,0.0,0.0] },
+  texture: { smooth: [1.0,2.5,1.0,3.0], rough: [3.5,3.5,0.5,1.0], crystalline: [2.5,1.0,4.0,1.5], diffuse: [1.0,1.0,2.5,3.0], granular: [2.0,2.0,1.0,1.0], glassy: [1.5,1.0,3.5,1.0], metallic: [2.0,3.0,2.0,0.0] },
+  motion: { static: [0.0,4.0,0.0,1.0], flowing: [1.0,0.0,1.0,4.0], surging: [4.5,0.0,2.0,1.0], swirling: [2.5,0.0,4.0,1.0], oscillating: [2.0,1.0,3.0,1.0], drifting: [1.0,0.5,3.0,2.5], pulsing: [2.5,0.5,1.5,2.0] },
+  density: { vacuum: [3.0,0.0,2.5,1.0], sparse: [2.5,0.0,2.0,1.0], moderate: [1.0,1.0,1.0,1.0], dense: [1.0,3.0,1.0,2.0], saturated: [1.5,2.5,2.0,2.5] },
+  temperature: { cold: [0.0,3.0,1.0,2.0], cool: [0.5,2.0,1.5,2.0], neutral: [1.0,1.0,1.0,1.0], warm: [2.5,1.0,1.5,1.0], hot: [4.0,0.5,1.0,0.0] },
+  polarity: { active: [3.0,1.0,2.0,0.5], receptive: [0.5,2.0,1.0,3.0], balanced: [1.0,1.0,1.0,1.0], neutral: [1.0,1.0,1.0,1.0] },
+  celestial: { solar: [4.0,0.5,1.0,0.0], lunar: [0.0,1.0,0.0,4.0], stellar: [1.0,0.5,3.0,1.0], planetary: [1.5,1.5,1.5,1.5], void: [0.5,0.5,0.5,0.5] },
+  archetype: { maiden: [1.0,0.5,3.0,1.0], mother: [0.5,2.0,0.5,3.0], crone: [1.0,3.0,2.0,2.0], hero: [4.0,1.0,2.0,0.5], mentor: [1.5,3.0,2.0,1.0], shadow: [0.5,0.5,1.0,4.0], trickster: [2.0,0.5,4.0,1.0] }
+};
+
+const ELEMENT_ORDER = ["fire","earth","air","water"];
+const ELEMENT_COLORS = { fire: "var(--ios-orange)", earth: "var(--ios-brown)", air: "var(--ios-yellow)", water: "var(--ios-blue)" };
+const ELEMENT_ICONS = { fire: "🔥", earth: "🌲", air: "💨", water: "💧" };
+const DOMAIN_ICONS = { water: "💧", air: "💨", fire: "🔥", earth: "🌲", mechanical: "⚙️", organic: "🍃", electrical: "⚡", cosmic: "🌌" };
+
+const ACCENT_PRESETS = [
+  { name: "Indigo", hex: "#5856D6" }, { name: "Pink", hex: "#FF2D55" }, { name: "Orange", hex: "#FF9500" },
+  { name: "Green", hex: "#34C759" }, { name: "Teal", hex: "#5AC8FA" }, { name: "Purple", hex: "#AF52DE" },
+  { name: "Red", hex: "#FF3B30" }, { name: "Blue", hex: "#007AFF" }
+];
+
+const BG_PRESETS = [
+  { name: "Default", hex: null }, { name: "Midnight", hex: "#1C1C1E" }, { name: "Deep Blue", hex: "#0A192F" },
+  { name: "Forest", hex: "#1A2F1A" }, { name: "Warm", hex: "#2C1B18" }, { name: "Rose", hex: "#2C1818" }
+];
+
+const MOON_PHASES = ["New Moon","Waxing Crescent","First Quarter","Waxing Gibbous","Full Moon","Waning Gibbous","Last Quarter","Waning Crescent"];
+
+function saveState() { localStorage.setItem("astrosleep_preview_state", JSON.stringify(state)); }
+function loadState() {
+  const raw = localStorage.getItem("astrosleep_preview_state");
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch (e) { return null; }
+}
+
+function defaultState() {
+  return {
+    screen: "scr-onboarding-intro",
+    tab: "tonight",
+    profile: null,
+    currentTier: "free",
+    theme: { accent: "#5856D6", bg: null, appearance: "system" },
+    combos: [],
+    currentCombo: null,
+    isPlaying: false,
+    masterVolume: 0.6,
+    sleepTimer: 60,
+    intention: "",
+    soundsFilter: { search: "", element: null, tagFilters: {} },
+    affirmationSettings: { voice: "siri-female-en", speed: 1.0, pitch: 0.0 },
+    timerDefault: 60,
+    locationToggle: false,
+    currentCity: "",
+    notificationEnabled: false,
+    contextSoundId: null
+  };
+}
+
+let state = loadState() || defaultState();
+
+// ---- Tag Engine ----
+function calculateTagVector(sound) {
+  let raw = [0,0,0,0];
+  for (const dim of TAG_DIMENSIONS) {
+    const val = sound.tags[dim.key];
+    const vec = TAG_VECTORS[dim.key][val];
+    const w = DIMENSION_WEIGHTS[dim.key];
+    if (vec) { for (let i = 0; i < 4; i++) raw[i] += vec[i] * w; }
+  }
+  const maxVal = Math.max(...raw);
+  if (maxVal <= 0) return [0,0,0,0];
+  return raw.map(v => parseFloat(((v / maxVal) * 10).toFixed(2)));
+}
+
+function dominantElement(scores) {
+  const arr = [scores.fire ?? scores[0], scores.earth ?? scores[1], scores.air ?? scores[2], scores.water ?? scores[3]];
+  const maxVal = Math.max(...arr);
+  const idx = arr.indexOf(maxVal);
+  return ELEMENT_ORDER[idx];
+}
+
+function computeNightlyVector() {
+  const date = new Date();
+  const dayOfYear = Math.floor((date - new Date(date.getFullYear(), 0, 0)) / 86400000);
+  const moonIdx = Math.floor((dayOfYear % 29.5) / 3.7) % 8;
+  const phase = MOON_PHASES[moonIdx];
+  const base = [2.5, 2.5, 2.5, 2.5];
+  if (phase.includes("Full")) { base[2] += 1.5; base[3] += 1.5; }
+  else if (phase.includes("New")) { base[0] += 1.0; base[3] += 1.5; }
+  else if (phase.includes("Quarter")) { base[0] += 0.5; base[1] += 0.5; }
+  const transitBoost = [Math.random()*1.5, Math.random()*1.2, Math.random()*1.0, Math.random()*1.8];
+  const total = base.map((v,i) => v + transitBoost[i]);
+  const maxVal = Math.max(...total);
+  return { vector: total.map(v => parseFloat(((v/maxVal)*10).toFixed(2))), phase, moonIdx };
+}
+
+function rankSounds(nightlyVec) {
+  return SOUNDS.map(s => {
+    const scores = [s.elementScores.fire, s.elementScores.earth, s.elementScores.air, s.elementScores.water];
+    let dot = 0;
+    for (let i = 0; i < 4; i++) dot += scores[i] * nightlyVec[i];
+    dot = parseFloat(((dot / 4.0) / 25.0).toFixed(2));
+    return { sound: s, score: dot, pct: Math.min(100, Math.round(dot * 100)) };
+  }).sort((a,b) => b.score - a.score);
+}
+
+// ---- Navigation ----
+function showScreen(id, transition) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('active');
+  if (transition === 'slideUp') el.classList.add('slide-up');
+  if (transition === 'slideRight') el.classList.add('slide-right');
+  setTimeout(() => { el.classList.remove('slide-up','slide-right'); }, 300);
+  state.screen = id;
+  saveState();
+}
+
+function goToOnboardingBirth() { showScreen('scr-onboarding-birth', 'slideRight'); }
+function goToOnboardingComplete() {
+  const name = document.getElementById('ob-name').value.trim();
+  const city = document.getElementById('ob-city').value.trim();
+  if (!name || !city) { alert('Please fill in all fields'); return; }
+  state.profile = { name, birthDate: document.getElementById('ob-date').value, birthTime: document.getElementById('ob-time').value, birthCity: city };
+  saveState();
+  showScreen('scr-onboarding-complete', 'slideRight');
+}
+function enterMainApp() { showScreen('scr-main'); renderTonight(); }
+
+function switchTab(tab) {
+  state.tab = tab;
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  const content = document.getElementById('tab-content');
+  content.innerHTML = '';
+  if (tab === 'tonight') renderTonight();
+  else if (tab === 'sounds') renderSounds();
+  else if (tab === 'library') renderLibrary();
+  else if (tab === 'settings') renderSettings();
+  saveState();
+}
+
+// ---- Tonight ----
+function renderTonight() {
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const nightly = computeNightlyVector();
+  const ranked = rankSounds(nightly.vector);
+  const maxLayers = state.currentTier === 'lifetime' ? 7 : state.currentTier === 'subscription' ? 7 : 2;
+  const top = ranked.slice(0, maxLayers);
+  const totalScore = top.reduce((s,r) => s + r.score, 0);
+  const layers = top.map((r, i) => ({ sound: r.sound, volume: totalScore > 0 ? parseFloat(((r.score/totalScore)*0.75).toFixed(2)) : 0.15 }));
+  state.currentCombo = { name: `${nightly.phase} Session`, layers, phase: nightly.phase, source: 'auto' };
+  const layerChips = layers.map(l => `<div class="layer-chip"><div class="dot ${dominantElement(l.sound.elementScores)}"></div>${l.sound.name}</div>`).join('');
+  const domEl = dominantElement(nightly.vector);
+
+  document.getElementById('tab-content').innerHTML = `
+    <div class="tonight-header">
+      <h2>${greeting}, ${state.profile?.name || 'there'}</h2>
+      <p>Ready to direct your subconscious tonight?</p>
+    </div>
+    <div class="card moon-row">
+      <div class="moon-icon">🌙</div>
+      <div class="moon-info">
+        <div class="label">Tonight's Moon</div>
+        <div class="value">${nightly.phase}</div>
+      </div>
+    </div>
+    <div class="card combo-card">
+      <div class="card-header">
+        <h3>Tonight's Recommendation</h3>
+        <button class="icon-btn" onclick="regenerateCombo()">↻</button>
+      </div>
+      <h4>${state.currentCombo.name}</h4>
+      <div class="layer-chips">${layerChips}</div>
+      <div class="badge-row">
+        <span>${layers.length} layer${layers.length===1?'':'s'}</span>
+        <span class="badge-auto">✨ Auto-generated</span>
+      </div>
+    </div>
+    <div class="intention-section">
+      <h3>What would you like to work on tonight?</h3>
+      <div style="position:relative;">
+        <textarea id="intention-text" oninput="updateCharCount(this)" style="background:var(--ios-card-secondary); border-radius:12px; padding:12px; width:100%; min-height:80px; max-height:180px; border:1px solid var(--ios-separator); color:var(--ios-label); font-family:inherit; font-size:17px; resize:none; outline:none;">${state.intention}</textarea>
+        <span id="text-placeholder" style="position:absolute; top:13px; left:13px; color:var(--ios-secondary); font-size:17px; pointer-events:none; display:${state.intention?'none':'block'};">Tonight I intend to...</span>
+      </div>
+      <div class="char-count" id="char-count">${state.intention.length}/280</div>
+    </div>
+    <div style="padding:0 20px 20px;">
+      <button class="btn-primary" onclick="beginSession()">Begin Tonight's Session</button>
+    </div>
+    <div style="padding:0 20px 40px;">
+      <button class="btn-text" style="color:var(--ios-accent);" onclick="showScreen('scr-combo-builder','slideRight')">Open Combo Builder →</button>
+    </div>
+  `;
+}
+function updateCharCount(el) {
+  document.getElementById('char-count').textContent = el.value.length + '/280';
+  const ph = document.getElementById('text-placeholder');
+  if (ph) ph.style.display = el.value.length > 0 ? 'none' : 'block';
+  state.intention = el.value;
+  saveState();
+}
+function regenerateCombo() { renderTonight(); }
+function beginSession() {
+  state.intention = document.getElementById('intention-text')?.value || state.intention;
+  saveState();
+  enterPlayback();
+}
+
+// ---- Sounds ----
+function renderSounds() {
+  let sounds = SOUNDS.slice();
+  const f = state.soundsFilter;
+  if (f.search) sounds = sounds.filter(s => s.name.toLowerCase().includes(f.search.toLowerCase()));
+  if (f.element) sounds = sounds.filter(s => dominantElement(s.elementScores) === f.element);
+  for (const [dim, vals] of Object.entries(f.tagFilters)) {
+    if (vals && vals.length) sounds = sounds.filter(s => vals.includes(s.tags[dim]));
+  }
+  const activeFilterCount = (f.element?1:0) + Object.values(f.tagFilters).filter(v => v && v.length).length;
+
+  const grid = sounds.map(s => {
+    const dom = dominantElement(s.elementScores);
+    const scores = [s.elementScores.fire, s.elementScores.earth, s.elementScores.air, s.elementScores.water];
+    const bars = scores.map((v,i) => `<div class="score-bar" style="flex:${v}; background:${ELEMENT_COLORS[ELEMENT_ORDER[i]]};"></div>`).join('');
+    const tags = [s.tags.domain, s.tags.rhythm, s.tags.register].map(t => `<span class="tag-pill">${t}</span>`).join('');
+    return `<div class="sound-card" onclick="playSound('${s.id}')">
+      <div class="art" style="color:${ELEMENT_COLORS[dom]};">${DOMAIN_ICONS[s.tags.domain] || '🔊'}
+        ${s.isNew ? '<div class="new-badge">NEW</div>' : ''}
+      </div>
+      <div class="card-actions" onclick="event.stopPropagation()">
+        <button class="card-action-btn" onclick="openContextMenu('${s.id}')">⋮</button>
+      </div>
+      <div class="info">
+        <div class="name">${s.name}</div>
+        <div class="score-bars">${bars}</div>
+        <div class="tag-pills">${tags}</div>
+        <div class="meta"><div class="dot ${dom}"></div><span>${dom.charAt(0).toUpperCase()+dom.slice(1)}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const filterPills = [];
+  if (f.element) filterPills.push(`<div class="filter-pill">Element: ${f.element} <span class="remove" onclick="clearElementFilter(event)">✕</span></div>`);
+  for (const [dim, vals] of Object.entries(f.tagFilters)) {
+    for (const v of (vals||[])) filterPills.push(`<div class="filter-pill">${dim}: ${v} <span class="remove" onclick="clearTagFilter(event,'${dim}','${v}')">✕</span></div>`);
+  }
+  if (activeFilterCount > 0) filterPills.push(`<div class="filter-pill" style="color:var(--ios-accent); cursor:pointer;" onclick="resetFilters()">Clear All</div>`);
+
+  const msgFilters = TAG_DIMENSIONS.map(dim => {
+    const activeCount = (f.tagFilters[dim.key] || []).length;
+    const label = activeCount > 0 ? `${dim.label} <span class="count">${activeCount}</span>` : dim.label;
+    return `<button class="msg-filter ${activeCount>0?'active':''}" onclick="showFilterDropdown('${dim.key}')">${label}</button>`;
+  }).join('');
+
+  document.getElementById('tab-content').innerHTML = `
+    <div style="display:flex; align-items:center; gap:8px; padding:12px 20px 0;">
+      <div class="search-bar" style="flex:1; margin:0;">
+        <span>🔍</span>
+        <input type="text" placeholder="Search sounds..." value="${f.search}" oninput="updateSearch(this.value)">
+      </div>
+      <button style="background:none; border:none; color:var(--ios-accent); font-size:24px; cursor:pointer; padding:8px; position:relative;" onclick="showScreen('scr-sound-filters')">
+        ☰
+        ${activeFilterCount > 0 ? `<span style="position:absolute; top:2px; right:2px; background:var(--ios-accent); color:#fff; font-size:10px; font-weight:700; width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center;">${activeFilterCount}</span>` : ''}
+      </button>
+    </div>
+    <div class="filter-chips">
+      <button class="filter-chip ${!f.element?'active':''}" onclick="filterElement(null)">All</button>
+      <button class="filter-chip ${f.element==='fire'?'active':''}" style="color:var(--ios-orange);" onclick="filterElement('fire')">Fire</button>
+      <button class="filter-chip ${f.element==='earth'?'active':''}" style="color:var(--ios-brown);" onclick="filterElement('earth')">Earth</button>
+      <button class="filter-chip ${f.element==='air'?'active':''}" style="color:var(--ios-yellow);" onclick="filterElement('air')">Air</button>
+      <button class="filter-chip ${f.element==='water'?'active':''}" style="color:var(--ios-blue);" onclick="filterElement('water')">Water</button>
+    </div>
+    <div class="msg-filter-bar">${msgFilters}</div>
+    ${filterPills.length ? `<div class="active-filters">${filterPills.join('')}</div>` : ''}
+    <div style="padding:0 20px 8px;">
+      <span style="font-size:13px; color:var(--ios-secondary);">Showing ${sounds.length} of ${SOUNDS.length} sounds</span>
+    </div>
+    <div class="sound-grid">${grid}</div>
+    <div style="height:40px;"></div>
+  `;
+}
+
+function updateSearch(v) { state.soundsFilter.search = v; saveState(); renderSounds(); }
+function filterElement(el) { state.soundsFilter.element = el; saveState(); renderSounds(); }
+function clearElementFilter(e) { e.stopPropagation(); state.soundsFilter.element = null; saveState(); renderSounds(); }
+function playSound(id) { const s = SOUNDS.find(x => x.id === id); if (s) alert('Now Playing: ' + s.name + ' (audio not available in preview)'); }
+function openContextMenu(id) { state.contextSoundId = id; document.getElementById('context-overlay').classList.add('active'); }
+function closeContextMenu(e) { if (e) e.stopPropagation(); state.contextSoundId = null; document.getElementById('context-overlay').classList.remove('active'); }
+function contextPreview() { if (state.contextSoundId) playSound(state.contextSoundId); closeContextMenu(); }
+function contextAddToCombo() { if (state.contextSoundId) addToCombo(state.contextSoundId); closeContextMenu(); }
+function contextDetails() { if (state.contextSoundId) openSoundDetail(state.contextSoundId); closeContextMenu(); }
+
+function renderFilterSheet() {
+  const container = document.getElementById('filter-dimensions');
+  if (!container) return;
+  container.innerHTML = TAG_DIMENSIONS.map(dim => {
+    const selected = state.soundsFilter.tagFilters[dim.key] || [];
+    const chips = dim.values.map(v => {
+      const isOn = selected.includes(v);
+      return `<button class="filter-chip ${isOn?'active':''}" onclick="toggleTagFilter('${dim.key}','${v}')">${v.charAt(0).toUpperCase()+v.slice(1)}</button>`;
+    }).join('');
+    return `<div class="sheet-section-title">${dim.label}</div><div class="filter-chips" style="padding:0 0 16px;">${chips}</div>`;
+  }).join('');
+}
+function toggleTagFilter(dim, val) {
+  const filters = state.soundsFilter.tagFilters;
+  if (!filters[dim]) filters[dim] = [];
+  if (filters[dim].includes(val)) filters[dim] = filters[dim].filter(v => v !== val);
+  else filters[dim].push(val);
+  if (!filters[dim].length) delete filters[dim];
+  saveState(); renderFilterSheet();
+}
+function clearTagFilter(e, dim, val) { e.stopPropagation(); toggleTagFilter(dim, val); renderSounds(); }
+function resetFilters() { state.soundsFilter = { search: state.soundsFilter.search, element: null, tagFilters: {} }; saveState(); renderSounds(); renderFilterSheet(); }
+function showFilterDropdown(dimKey) { showScreen('scr-sound-filters'); renderFilterSheet(); }
+function closeFilterSheet() { showScreen('scr-main'); switchTab('sounds'); }
+
+function openSoundDetail(id) {
+  const s = SOUNDS.find(x => x.id === id); if (!s) return;
+  const dom = dominantElement(s.elementScores);
+  const tags = TAG_DIMENSIONS.map(d => `<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:0.5px solid var(--ios-separator); font-size:15px;"><span style="color:var(--ios-secondary);">${d.label}</span><span>${s.tags[d.key].charAt(0).toUpperCase()+s.tags[d.key].slice(1)}</span></div>`).join('');
+  const scores = [s.elementScores.fire, s.elementScores.earth, s.elementScores.air, s.elementScores.water];
+  const bars = scores.map((v,i) => `<div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;"><span style="width:50px; font-size:13px; color:var(--ios-secondary); text-transform:capitalize;">${ELEMENT_ORDER[i]}</span><div style="flex:1; height:6px; background:var(--ios-card-tertiary); border-radius:3px; overflow:hidden;"><div style="width:${v*10}%; height:100%; background:${ELEMENT_COLORS[ELEMENT_ORDER[i]]};"></div></div><span style="width:30px; text-align:right; font-size:13px;">${v}</span></div>`).join('');
+  document.getElementById('sound-detail-content').innerHTML = `
+    <div style="text-align:center; margin-bottom:16px;">
+      <div style="font-size:48px; margin-bottom:8px;">${DOMAIN_ICONS[s.tags.domain]}</div>
+      <div style="font-size:20px; font-weight:700;">${s.name}</div>
+      <div style="color:var(--ios-secondary); margin-top:4px;">${s.durationSeconds}s · ${dom.charAt(0).toUpperCase()+dom.slice(1)}</div>
+    </div>
+    <div style="margin-bottom:16px;">${bars}</div>
+    <div style="font-size:15px; font-weight:600; margin-bottom:8px;">Tags</div>
+    <div style="margin-bottom:20px;">${tags}</div>
+    <button class="btn-primary" style="margin-bottom:8px;" onclick="alert('Preview: ${s.name} (audio not available in preview)')">▶ Preview (30s)</button>
+    <button class="btn-secondary" style="width:100%;" onclick="addToCombo('${s.id}'); showScreen('scr-main'); switchTab('sounds');">+ Add to Combo</button>
+  `;
+  showScreen('scr-sound-detail','slideUp');
+}
+
+// ---- Combo Builder ----
+function addToCombo(soundId) {
+  const s = SOUNDS.find(x => x.id === soundId); if (!s) return;
+  const maxLayers = state.currentTier === 'lifetime' ? 7 : state.currentTier === 'subscription' ? 7 : 2;
+  let combo = state.currentCombo || { name: "Custom Combo", layers: [], source: 'user' };
+  if (combo.layers.length >= maxLayers) { alert('Layer limit reached for your tier. Upgrade to add more.'); showScreen('scr-paywall','slideRight'); return; }
+  combo.layers.push({ sound: s, volume: 0.5 });
+  state.currentCombo = combo;
+  saveState();
+}
+function renderComboBuilder() {
+  const combo = state.currentCombo || { name: "Custom Combo", layers: [], source: 'user' };
+  const maxLayers = state.currentTier === 'lifetime' ? 7 : state.currentTier === 'subscription' ? 7 : 2;
+  const layersHtml = combo.layers.map((l, i) => `
+    <div class="layer-row">
+      <div class="dot ${dominantElement(l.sound.elementScores)}"></div>
+      <span class="sound-name">${l.sound.name}</span>
+      <div class="slider-track mini-slider" onclick="setLayerVolume(event,${i})"><div class="slider-fill" style="width:${l.volume*100}%"></div></div>
+      <span style="font-size:13px; color:var(--ios-secondary); width:36px; text-align:right;">${Math.round(l.volume*100)}%</span>
+      <button style="background:none; border:none; color:var(--ios-red); font-size:18px; cursor:pointer;" onclick="removeLayer(${i})">🗑</button>
+    </div>
+  `).join('');
+  document.getElementById('combo-builder-list').innerHTML = `
+    <div class="settings-section"><h4>Ambient Layers (${combo.layers.length}/${maxLayers})</h4></div>
+    ${layersHtml}
+    <div style="padding:12px 20px;">
+      <button class="btn-text" style="color:var(--ios-accent); font-size:17px; display:flex; align-items:center; gap:8px;" onclick="switchTab('sounds'); showScreen('scr-main');">
+        <span>+</span> Add Sound
+      </button>
+    </div>
+    <div style="padding:0 20px 20px;">
+      <button class="btn-primary" onclick="saveCombo()">Save Combo</button>
+    </div>
+  `;
+}
+function setLayerVolume(e, idx) {
+  const combo = state.currentCombo; if (!combo || !combo.layers[idx]) return;
+  const track = e.currentTarget;
+  const rect = track.getBoundingClientRect();
+  const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  combo.layers[idx].volume = parseFloat(pct.toFixed(2));
+  saveState(); renderComboBuilder();
+}
+function removeLayer(idx) {
+  const combo = state.currentCombo; if (!combo) return;
+  combo.layers.splice(idx, 1);
+  saveState(); renderComboBuilder();
+}
+function saveCombo() {
+  const combo = state.currentCombo; if (!combo) return;
+  if (!state.combos.find(c => c.name === combo.name)) {
+    const maxPlaylists = state.currentTier === 'lifetime' ? 999 : state.currentTier === 'subscription' ? 15 : 3;
+    if (state.combos.length >= maxPlaylists) { alert('Playlist limit reached'); return; }
+    state.combos.push({ ...combo, id: Date.now().toString() });
+    saveState();
+  }
+  alert('Combo saved!'); showScreen('scr-main'); switchTab('library');
+}
+
+// ---- Playback ----
+function enterPlayback() {
+  const combo = state.currentCombo; if (!combo) return;
+  const dom = combo.layers.length ? dominantElement(combo.layers[0].sound.elementScores) : 'fire';
+  document.getElementById('playback-title').textContent = combo.name;
+  document.getElementById('playback-symbol').textContent = ELEMENT_ICONS[dom] || '🔥';
+  document.getElementById('playback-symbol').style.color = ELEMENT_COLORS[dom];
+  document.getElementById('playback-waveform').innerHTML = combo.layers.map((l,i) => `<div class="wave-bar" style="background:${ELEMENT_COLORS[dominantElement(l.sound.elementScores)]}; animation-delay:${i*0.2}s;"></div>`).join('');
+  state.isPlaying = true;
+  updatePlaybackUI();
+  showScreen('scr-playback','slideUp');
+}
+function exitPlayback() { showScreen('scr-main'); renderTonight(); }
+function updatePlaybackUI() {
+  const dot = document.getElementById('playback-status-dot');
+  const txt = document.getElementById('playback-status-text');
+  const btn = document.getElementById('play-btn');
+  const bars = document.querySelectorAll('.wave-bar');
+  if (!dot || !txt || !btn) return;
+  dot.style.background = state.isPlaying ? 'var(--ios-green)' : 'var(--ios-orange)';
+  txt.textContent = state.isPlaying ? 'Playing' : 'Paused';
+  btn.textContent = state.isPlaying ? '⏸' : '▶';
+  bars.forEach(b => b.style.animationPlayState = state.isPlaying ? 'running' : 'paused');
+}
+function togglePlay() { state.isPlaying = !state.isPlaying; updatePlaybackUI(); saveState(); }
+function stopPlayback() { state.isPlaying = false; updatePlaybackUI(); showScreen('scr-main'); renderTonight(); }
+function setVolume(e) {
+  const track = e.currentTarget;
+  const rect = track.getBoundingClientRect();
+  const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  state.masterVolume = parseFloat(pct.toFixed(2));
+  document.getElementById('master-volume-fill').style.width = (pct*100) + '%';
+  document.getElementById('master-volume-thumb').style.left = (pct*100) + '%';
+  saveState();
+}
+function setSleepTimer(min) {
+  state.sleepTimer = min;
+  document.querySelectorAll('#scr-sleep-timer .arrow').forEach(el => el.textContent = '');
+  document.getElementById('timer-' + min).textContent = '✓';
+  saveState();
+}
+function saveCurrentCombo() { saveCombo(); }
+
+// ---- Layer Panel ----
+function renderLayerPanel() {
+  const combo = state.currentCombo; if (!combo) return;
+  document.getElementById('layer-panel-list').innerHTML = `
+    <div class="settings-section"><h4>Ambient Layers (${combo.layers.length})</h4></div>
+    ${combo.layers.map(l => `
+      <div class="layer-row">
+        <div class="dot ${dominantElement(l.sound.elementScores)}"></div>
+        <span class="sound-name">${l.sound.name}</span>
+        <div class="slider-track mini-slider"><div class="slider-fill" style="width:${l.volume*100}%"></div></div>
+        <span style="font-size:13px; color:var(--ios-secondary);">${Math.round(l.volume*100)}%</span>
+      </div>
+    `).join('')}
+    <div class="settings-section"><h4>Affirmation</h4></div>
+    <div class="layer-row">
+      <span style="color:var(--ios-accent);">🎙</span>
+      <span class="sound-name">Affirmation</span>
+      <div class="slider-track mini-slider"><div class="slider-fill" style="width:10%"></div></div>
+      <span style="font-size:13px; color:var(--ios-secondary);">10%</span>
+    </div>
+  `;
+}
+
+// ---- Library ----
+function renderLibrary() {
+  const combos = state.combos;
+  const rows = combos.length ? combos.map(c => {
+    const icon = c.layers.length ? DOMAIN_ICONS[c.layers[0].sound.tags.domain] : '🌙';
+    return `<div class="playlist-row" onclick="loadCombo('${c.id}')">
+      <div class="playlist-art">${icon}</div>
+      <div class="playlist-info">
+        <h4>${c.name}</h4>
+        <p>${c.layers.length} layers · ${c.source === 'auto' ? 'Auto-generated' : 'User created'}</p>
+      </div>
+    </div>`;
+  }).join('') : `<div class="empty-state">
+    <div style="font-size:48px; margin-bottom:16px;">📚</div>
+    <div style="font-size:17px; font-weight:600; margin-bottom:8px;">No saved combos yet</div>
+    <div>Create your first combo from the Tonight screen or Sound Library.</div>
+  </div>`;
+
+  const maxPlaylists = state.currentTier === 'lifetime' ? '∞' : state.currentTier === 'subscription' ? '∞' : 5;
+  const limitInfo = state.currentTier !== 'lifetime' ? `<div class="settings-section"><h4>${combos.length}/${maxPlaylists} saved</h4></div>` : '';
+
+  document.getElementById('tab-content').innerHTML = `
+    <div class="settings-section"><h4>Saved Combos</h4></div>
+    ${rows}
+    ${limitInfo}
+    <div style="height:40px;"></div>
+  `;
+}
+function loadCombo(id) {
+  const combo = state.combos.find(c => c.id === id);
+  if (combo) { state.currentCombo = combo; enterPlayback(); }
+}
+
+// ---- Settings ----
+function renderSettings() {
+  const t = state.currentTier;
+  const tierLabel = t === 'lifetime' ? 'Pro (Lifetime)' : t === 'subscription' ? 'Subscription' : 'Free';
+  document.getElementById('tab-content').innerHTML = `
+    <div class="settings-list">
+      <div class="settings-section"><h4>Profile</h4></div>
+      <div class="settings-row" onclick="showScreen('scr-profile-edit','slideRight')"><span>Name & Birth Data</span><span class="arrow">›</span></div>
+      <div class="settings-section"><h4>Location</h4></div>
+      <div class="settings-row" style="flex-wrap:wrap;">
+        <span>Use Current Location for Transits</span>
+        <div class="toggle-switch ${state.locationToggle?'on':''}" onclick="toggleLocation()"></div>
+        <p class="caption">When enabled, AstroSleep uses your current geographic location to compute house placements and angular emphasis for tonight's transits.</p>
+      </div>
+      ${state.locationToggle ? `<div class="settings-row" onclick="showScreen('scr-location-edit','slideRight')"><span>Current Location</span><span class="arrow">›</span></div>` : ''}
+      <div class="settings-section"><h4>Subscription</h4></div>
+      <div class="settings-row"><span>Current Plan</span><span class="value">${tierLabel}</span></div>
+      <div class="settings-row" onclick="showScreen('scr-paywall','slideRight')"><span style="color:var(--ios-accent);">Manage Subscription</span></div>
+      <div class="settings-row" onclick="restorePurchases()"><span style="color:var(--ios-accent);">Restore Purchases</span></div>
+      <div class="settings-section"><h4>Appearance</h4></div>
+      <div class="settings-row" onclick="showScreen('scr-appearance','slideRight')"><span>Appearance Mode</span><span class="arrow">›</span></div>
+      <div class="settings-row" onclick="showScreen('scr-accent-picker','slideRight')"><span>Accent Color</span><span class="value">${t==='lifetime'?'':'Pro'}</span></div>
+      <div class="settings-row" onclick="showScreen('scr-bg-picker','slideRight')"><span>Background Color</span><span class="value">${t==='lifetime'?'':'Pro'}</span></div>
+      <div class="settings-section"><h4>Audio</h4></div>
+      <div class="settings-row" onclick="alert('Background audio: always enabled in preview')"><span>Background Audio</span><span class="arrow">›</span></div>
+      <div class="settings-row" onclick="showScreen('scr-timer-settings','slideRight')"><span>Sleep Timer Default</span><span class="arrow">›</span></div>
+      <div class="settings-section"><h4>Affirmation</h4></div>
+      <div class="settings-row" onclick="showScreen('scr-affirmation-settings','slideRight')"><span>Voice, Speed & Pitch</span><span class="arrow">›</span></div>
+      <div class="settings-section"><h4>Notifications</h4></div>
+      <div class="settings-row" style="flex-wrap:wrap;">
+        <span>Bedtime Reminder</span>
+        <div class="toggle-switch ${state.notificationEnabled?'on':''}" onclick="toggleNotification()"></div>
+      </div>
+      <div class="settings-section"><h4>Privacy</h4></div>
+      <div class="settings-row"><p class="caption">Your birth data is stored only on this device and never uploaded.</p></div>
+      <div class="settings-row destructive" onclick="deleteAllData()"><span>Delete All My Data</span></div>
+      <div class="settings-section"><h4>About</h4></div>
+      <div class="settings-row"><span>Version</span><span class="value">3.2.0</span></div>
+      <div class="settings-row" onclick="alert('Opens privacy policy')"><span style="color:var(--ios-accent);">Privacy Policy</span></div>
+      <div class="settings-row" onclick="alert('Opens terms of service')"><span style="color:var(--ios-accent);">Terms of Service</span></div>
+    </div>
+  `;
+}
+function toggleLocation() { state.locationToggle = !state.locationToggle; saveState(); renderSettings(); }
+function toggleNotification() { state.notificationEnabled = !state.notificationEnabled; saveState(); renderSettings(); }
+function deleteAllData() { if (!confirm('Delete all data? This cannot be undone.')) return; state = defaultState(); saveState(); showScreen('scr-onboarding-intro'); }
+
+// ---- Settings Subscreens ----
+function setTier(tier) {
+  state.currentTier = tier;
+  saveState();
+  alert(`${tier.charAt(0).toUpperCase()+tier.slice(1)} tier activated!`);
+  showScreen('scr-main');
+  switchTab('settings');
+}
+function restorePurchases() { alert('Restoring purchases... (simulated)'); }
+
+function setAppearance(mode) {
+  state.theme.appearance = mode;
+  document.getElementById('app-system').classList.toggle('active', mode === 'system');
+  document.getElementById('app-light').classList.toggle('active', mode === 'light');
+  if (mode === 'light') { document.documentElement.style.setProperty('--ios-bg', '#f2f2f7'); document.documentElement.style.setProperty('--ios-label', '#000000'); document.documentElement.style.setProperty('--ios-card', '#ffffff'); }
+  else { document.documentElement.style.setProperty('--ios-bg', '#000000'); document.documentElement.style.setProperty('--ios-label', '#ffffff'); document.documentElement.style.setProperty('--ios-card', '#1c1c1e'); }
+  saveState();
+}
+function renderAccentPicker() {
+  const grid = ACCENT_PRESETS.map(p => `
+    <div class="color-cell" onclick="setAccent('${p.hex}')">
+      <div class="color-swatch ${state.theme.accent===p.hex?'selected':''}" style="background:${p.hex};"></div>
+      <div style="font-size:13px;">${p.name}</div>
+    </div>
+  `).join('');
+  document.getElementById('accent-grid').innerHTML = grid;
+  document.getElementById('accent-preview-btn').style.background = state.theme.accent;
+}
+function setAccent(hex) {
+  // Custom accent colors are free for all tiers
+  state.theme.accent = hex;
+  document.documentElement.style.setProperty('--ios-accent', hex);
+  saveState(); renderAccentPicker();
+}
+function renderBgPicker() {
+  const grid = BG_PRESETS.map(p => `
+    <div class="color-cell" onclick="setBg('${p.hex||''}')">
+      <div class="color-swatch ${state.theme.bg===p.hex || (!state.theme.bg && !p.hex) ?'selected':''}" style="background:${p.hex||'var(--ios-card-secondary)'}; ${!p.hex?'border:2px solid var(--ios-label);':''}"></div>
+      <div style="font-size:13px;">${p.name}</div>
+    </div>
+  `).join('');
+  document.getElementById('bg-grid').innerHTML = grid;
+  const preview = document.getElementById('bg-preview-box');
+  if (preview) preview.style.background = state.theme.bg || 'var(--ios-card-secondary)';
+}
+function setBg(hex) {
+  // Custom accent colors are free for all tiers
+  state.theme.bg = hex || null;
+  document.documentElement.style.setProperty('--ios-bg', hex || '#000000');
+  saveState(); renderBgPicker();
+}
+
+function populateProfileEdit() {
+  if (!state.profile) return;
+  document.getElementById('pe-name').value = state.profile.name || '';
+  document.getElementById('pe-date').value = state.profile.birthDate || '';
+  document.getElementById('pe-time').value = state.profile.birthTime || '';
+  document.getElementById('pe-city').value = state.profile.birthCity || '';
+}
+function saveProfile() {
+  state.profile = {
+    name: document.getElementById('pe-name').value,
+    birthDate: document.getElementById('pe-date').value,
+    birthTime: document.getElementById('pe-time').value,
+    birthCity: document.getElementById('pe-city').value
+  };
+  saveState(); showScreen('scr-main'); switchTab('settings');
+}
+function populateLocationEdit() {
+  document.getElementById('loc-city').value = state.currentCity || '';
+}
+function saveLocation() {
+  state.currentCity = document.getElementById('loc-city').value;
+  saveState(); showScreen('scr-main'); switchTab('settings');
+}
+function selectVoice(row) {
+  document.querySelectorAll('.voice-row').forEach(r => { r.classList.remove('selected'); r.querySelector('.check').style.color = 'var(--ios-secondary)'; });
+  row.classList.add('selected'); row.querySelector('.check').style.color = 'var(--ios-accent)';
+}
+function setSpeed(e) {
+  const track = e.currentTarget;
+  const rect = track.getBoundingClientRect();
+  const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  state.affirmationSettings.speed = parseFloat((0.5 + pct).toFixed(2));
+  document.getElementById('speed-slider-fill').style.width = (pct*100) + '%';
+  document.getElementById('speed-slider-thumb').style.left = (pct*100) + '%';
+  document.getElementById('speed-display').textContent = state.affirmationSettings.speed.toFixed(2) + 'x';
+  saveState();
+}
+function setPitch(e) {
+  const track = e.currentTarget;
+  const rect = track.getBoundingClientRect();
+  const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  const semitones = Math.round((pct - 0.5) * 12);
+  state.affirmationSettings.pitch = semitones;
+  document.getElementById('pitch-slider-fill').style.width = (pct*100) + '%';
+  document.getElementById('pitch-slider-thumb').style.left = (pct*100) + '%';
+  document.getElementById('pitch-display').textContent = (semitones > 0 ? '+' : '') + semitones + ' semitones';
+  saveState();
+}
+function saveAffirmationSettings() {
+  const selected = document.querySelector('.voice-row.selected');
+  if (selected) state.affirmationSettings.voice = selected.dataset.voice;
+  saveState(); showScreen('scr-main');
+}
+function populateTimerSettings() {
+  document.getElementById('timer-default').value = state.timerDefault;
+}
+function saveTimerSettings() {
+  state.timerDefault = parseInt(document.getElementById('timer-default').value);
+  saveState(); showScreen('scr-main'); switchTab('settings');
+}
+
+// ---- Init & Screen Watchers ----
+function init() {
+  if (state.theme.accent) document.documentElement.style.setProperty('--ios-accent', state.theme.accent);
+  if (state.theme.bg) document.documentElement.style.setProperty('--ios-bg', state.theme.bg);
+  if (state.theme.appearance === 'light') setAppearance('light');
+  if (state.screen && state.screen !== 'scr-onboarding-intro') {
+    showScreen(state.screen);
+    if (state.screen === 'scr-main') switchTab(state.tab || 'tonight');
+  }
+  renderFilterSheet();
+  renderAccentPicker();
+  renderBgPicker();
+}
+
+// Screen navigation back-stack for swipe-back
+const screenStack = [];
+const origShowScreen = showScreen;
+showScreen = function(id, transition) {
+  if (id !== state.screen) screenStack.push(state.screen);
+  origShowScreen(id, transition);
+  if (id === 'scr-profile-edit') setTimeout(populateProfileEdit, 50);
+  if (id === 'scr-location-edit') setTimeout(populateLocationEdit, 50);
+  if (id === 'scr-affirmation-settings') setTimeout(populateAffirmationSettings, 50);
+  if (id === 'scr-timer-settings') setTimeout(populateTimerSettings, 50);
+  if (id === 'scr-accent-picker') setTimeout(renderAccentPicker, 50);
+  if (id === 'scr-bg-picker') setTimeout(renderBgPicker, 50);
+  if (id === 'scr-combo-builder') setTimeout(renderComboBuilder, 50);
+  if (id === 'scr-layer-panel') setTimeout(renderLayerPanel, 50);
+  if (id === 'scr-sound-filters') setTimeout(renderFilterSheet, 50);
+};
+function goBack() {
+  const prev = screenStack.pop() || 'scr-main';
+  if (prev === 'scr-main') { showScreen(prev); switchTab(state.tab || 'tonight'); }
+  else showScreen(prev, 'slideRight');
+}
+
+// Swipe from left edge
+let touchStartX = 0;
+const swipeEdge = document.getElementById('swipe-edge');
+if (swipeEdge) {
+  swipeEdge.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+  swipeEdge.addEventListener('touchmove', e => {
+    const dx = e.touches[0].clientX - touchStartX;
+    if (dx > 60 && state.screen !== 'scr-main' && state.screen !== 'scr-onboarding-intro') goBack();
+  }, { passive: true });
+}
+
+function populateAffirmationSettings() {
+  document.querySelectorAll('.voice-row').forEach(r => {
+    if (r.dataset.voice === state.affirmationSettings.voice) { r.classList.add('selected'); r.querySelector('.check').style.color = 'var(--ios-accent)'; }
+    else { r.classList.remove('selected'); r.querySelector('.check').style.color = 'var(--ios-secondary)'; }
+  });
+  const speedPct = ((state.affirmationSettings.speed - 0.5) / 1.0) * 100;
+  document.getElementById('speed-slider-fill').style.width = speedPct + '%';
+  document.getElementById('speed-slider-thumb').style.left = speedPct + '%';
+  document.getElementById('speed-display').textContent = state.affirmationSettings.speed.toFixed(2) + 'x';
+  const pitchVal = state.affirmationSettings.pitch || 0;
+  const pitchPct = ((pitchVal + 6) / 12) * 100;
+  document.getElementById('pitch-slider-fill').style.width = pitchPct + '%';
+  document.getElementById('pitch-slider-thumb').style.left = pitchPct + '%';
+  document.getElementById('pitch-display').textContent = (pitchVal > 0 ? '+' : '') + pitchVal + ' semitones';
+}
+
+init();
+</script>
+</body>
+</html>
+

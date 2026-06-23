@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Bundle Info -->
+    <key>CFBundleDevelopmentRegion</key>
+    <string>$(DEVELOPMENT_LANGUAGE)</string>
+    <key>CFBundleDisplayName</key>
+    <string>AstroSleep</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.astrosleep.app</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+    <key>CFBundlePackageType</key>
+    <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    
+    <!-- UI -->
+    <key>UIApplicationSceneManifest</key>
+    <dict>
+        <key>UIApplicationSupportsMultipleScenes</key>
+        <false/>
+        <key>UISceneConfigurations</key>
+        <dict>
+            <key>UIWindowSceneSessionRoleApplication</key>
+            <array>
+                <dict>
+                    <key>UISceneConfigurationName</key>
+                    <string>Default Configuration</string>
+                    <key>UISceneDelegateClassName</key>
+                    <string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+                </dict>
+            </array>
+        </dict>
+    </dict>
+    
+    <!-- Supported Orientations -->
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+    </array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    
+    <!-- Background Modes -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>audio</string>
+        <string>fetch</string>
+        <string>remote-notification</string>
+    </array>
+    
+    <!-- Audio -->
+    <key>AVAudioSessionCategory</key>
+    <string>AVAudioSessionCategoryPlayback</string>
+    
+    <!-- Privacy Descriptions -->
+    <key>NSMicrophoneUsageDescription</key>
+    <string>AstroSleep needs microphone access to record your custom affirmation voice (Pro feature only). Recordings are stored locally and never uploaded.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>AstroSleep uses your location for astrological computation: first to geocode your city of birth for natal chart calculation, and optionally to compute current transit house placements and angular emphasis if you enable current-location scoring. All location data is stored locally and never uploaded.</string>
+    <key>NSUserTrackingUsageDescription</key>
+    <string>Your data is used to improve the app experience and is not shared with third parties for advertising.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>AstroSleep uses on-device speech synthesis voices (including Siri voices) to read affirmations. No audio is sent to Apple's servers; all voice processing happens on your device.</string>
+    
+    <!-- Generative AI Disclosure (App Store Requirement) -->
+    <key>NSGenerativeAIDisclosure</key>
+    <dict>
+        <key>NSGenerativeAIUsesGenerativeModels</key>
+        <true/>
+        <key>NSGenerativeAIOnDeviceOnly</key>
+        <false/>
+        <key>NSGenerativeAIContentFiltering</key>
+        <true/>
+        <key>NSGenerativeAIDescription</key>
+        <string>AstroSleep uses a server-side AI proxy to generate first-person sleep affirmations based on user-provided intentions. Content is strictly limited to positive, wellness-focused affirmations via a controlled system prompt. No medical or therapeutic claims are made.</string>
+    </dict>
+    
+    <!-- App Transport Security -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <false/>
+        <key>NSExceptionDomains</key>
+        <dict>
+            <key>localhost</key>
+            <dict>
+                <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                <true/>
+            </dict>
+        </dict>
+    </dict>
+    
+    <!-- RevenueCat: set via build configuration or xcconfig, NEVER commit real keys -->
+    <key>REVENUECAT_API_KEY</key>
+    <string>$(REVENUECAT_API_KEY)</string>
+    
+    <!-- Supabase: set via build configuration or xcconfig, NEVER commit real keys -->
+    <key>SUPABASE_URL</key>
+    <string>$(SUPABASE_URL)</string>
+    <key>SUPABASE_ANON_KEY</key>
+    <string>$(SUPABASE_ANON_KEY)</string>
+    
+    <!-- Encryption export compliance -->
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
+    
+    <!-- Deep Links -->
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>astrosleep</string>
+            </array>
+            <key>CFBundleURLName</key>
+            <string>com.astrosleep.app</string>
+        </dict>
+    </array>
+    
+    <!-- Associated Domains -->
+    <key>com.apple.developer.associated-domains</key>
+    <array>
+        <string>applinks:astrosleep.app</string>
+    </array>
+</dict>
+</plist>

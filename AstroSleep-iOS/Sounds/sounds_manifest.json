@@ -1,0 +1,673 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-11",
+  "sounds": [
+    {
+      "id": "heavy_rain",
+      "name": "Heavy Rain",
+      "tags": {
+        "domain": "water",
+        "rhythm": "irregular",
+        "register": "mid",
+        "context": "nature",
+        "weight": "heavy",
+        "texture": "rough",
+        "motion": "flowing",
+        "density": "dense",
+        "temperature": "cool",
+        "polarity": "receptive",
+        "celestial": "lunar",
+        "archetype": "mother"
+      },
+      "elementScores": {
+        "fire": 0.45,
+        "earth": 0.82,
+        "air": 0.38,
+        "water": 0.91
+      },
+      "durationSeconds": 60,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/heavy_rain.m4a",
+      "bundleFilename": "heavy_rain.m4a"
+    },
+    {
+      "id": "light_rain",
+      "name": "Light Rain",
+      "tags": {
+        "domain": "water",
+        "rhythm": "irregular",
+        "register": "bright",
+        "context": "nature",
+        "weight": "light",
+        "texture": "crystalline",
+        "motion": "flowing",
+        "density": "sparse",
+        "temperature": "cool",
+        "polarity": "receptive",
+        "celestial": "lunar",
+        "archetype": "maiden"
+      },
+      "elementScores": {
+        "fire": 0.32,
+        "earth": 0.45,
+        "air": 0.55,
+        "water": 0.78
+      },
+      "durationSeconds": 45,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/light_rain.m4a",
+      "bundleFilename": "light_rain.m4a"
+    },
+    {
+      "id": "thunder",
+      "name": "Thunderstorm",
+      "tags": {
+        "domain": "electrical",
+        "rhythm": "chaotic",
+        "register": "full",
+        "context": "nature",
+        "weight": "massive",
+        "texture": "rough",
+        "motion": "surging",
+        "density": "saturated",
+        "temperature": "cool",
+        "polarity": "active",
+        "celestial": "planetary",
+        "archetype": "shadow"
+      },
+      "elementScores": {
+        "fire": 0.88,
+        "earth": 0.65,
+        "air": 0.72,
+        "water": 0.41
+      },
+      "durationSeconds": 90,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/thunder.m4a",
+      "bundleFilename": "thunder.m4a"
+    },
+    {
+      "id": "ocean",
+      "name": "Ocean Waves",
+      "tags": {
+        "domain": "water",
+        "rhythm": "pulse",
+        "register": "deep",
+        "context": "nature",
+        "weight": "medium",
+        "texture": "smooth",
+        "motion": "flowing",
+        "density": "dense",
+        "temperature": "cool",
+        "polarity": "receptive",
+        "celestial": "lunar",
+        "archetype": "mother"
+      },
+      "elementScores": {
+        "fire": 0.28,
+        "earth": 0.48,
+        "air": 0.35,
+        "water": 0.89
+      },
+      "durationSeconds": 60,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/ocean.m4a",
+      "bundleFilename": "ocean.m4a"
+    },
+    {
+      "id": "river",
+      "name": "River / Stream",
+      "tags": {
+        "domain": "water",
+        "rhythm": "rhythmic",
+        "register": "mid",
+        "context": "nature",
+        "weight": "medium",
+        "texture": "rough",
+        "motion": "flowing",
+        "density": "moderate",
+        "temperature": "cool",
+        "polarity": "receptive",
+        "celestial": "planetary",
+        "archetype": "mentor"
+      },
+      "elementScores": {
+        "fire": 0.35,
+        "earth": 0.62,
+        "air": 0.42,
+        "water": 0.81
+      },
+      "durationSeconds": 60,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/river.m4a",
+      "bundleFilename": "river.m4a"
+    },
+    {
+      "id": "forest",
+      "name": "Forest / Birds",
+      "tags": {
+        "domain": "organic",
+        "rhythm": "arrhythmic",
+        "register": "full",
+        "context": "nature",
+        "weight": "light",
+        "texture": "diffuse",
+        "motion": "drifting",
+        "density": "moderate",
+        "temperature": "neutral",
+        "polarity": "balanced",
+        "celestial": "stellar",
+        "archetype": "trickster"
+      },
+      "elementScores": {
+        "fire": 0.42,
+        "earth": 0.58,
+        "air": 0.48,
+        "water": 0.52
+      },
+      "durationSeconds": 90,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/forest.m4a",
+      "bundleFilename": "forest.m4a"
+    },
+    {
+      "id": "wind",
+      "name": "Wind",
+      "tags": {
+        "domain": "air",
+        "rhythm": "irregular",
+        "register": "bright",
+        "context": "nature",
+        "weight": "medium",
+        "texture": "diffuse",
+        "motion": "swirling",
+        "density": "sparse",
+        "temperature": "cool",
+        "polarity": "active",
+        "celestial": "planetary",
+        "archetype": "trickster"
+      },
+      "elementScores": {
+        "fire": 0.55,
+        "earth": 0.25,
+        "air": 0.88,
+        "water": 0.32
+      },
+      "durationSeconds": 60,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/wind.m4a",
+      "bundleFilename": "wind.m4a"
+    },
+    {
+      "id": "fire",
+      "name": "Fire / Crackling",
+      "tags": {
+        "domain": "fire",
+        "rhythm": "irregular",
+        "register": "mid",
+        "context": "nature",
+        "weight": "medium",
+        "texture": "rough",
+        "motion": "surging",
+        "density": "moderate",
+        "temperature": "hot",
+        "polarity": "active",
+        "celestial": "solar",
+        "archetype": "hero"
+      },
+      "elementScores": {
+        "fire": 0.92,
+        "earth": 0.35,
+        "air": 0.48,
+        "water": 0.25
+      },
+      "durationSeconds": 60,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/fire.m4a",
+      "bundleFilename": "fire.m4a"
+    },
+    {
+      "id": "white_noise",
+      "name": "White Noise",
+      "tags": {
+        "domain": "electrical",
+        "rhythm": "steady",
+        "register": "full",
+        "context": "abstract",
+        "weight": "medium",
+        "texture": "smooth",
+        "motion": "static",
+        "density": "saturated",
+        "temperature": "neutral",
+        "polarity": "neutral",
+        "celestial": "void",
+        "archetype": "crone"
+      },
+      "elementScores": {
+        "fire": 0.48,
+        "earth": 0.52,
+        "air": 0.51,
+        "water": 0.49
+      },
+      "durationSeconds": 30,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/white_noise.m4a",
+      "bundleFilename": "white_noise.m4a"
+    },
+    {
+      "id": "brown_noise",
+      "name": "Brown Noise",
+      "tags": {
+        "domain": "earth",
+        "rhythm": "steady",
+        "register": "sub",
+        "context": "abstract",
+        "weight": "medium",
+        "texture": "smooth",
+        "motion": "static",
+        "density": "dense",
+        "temperature": "cool",
+        "polarity": "receptive",
+        "celestial": "planetary",
+        "archetype": "mother"
+      },
+      "elementScores": {
+        "fire": 0.25,
+        "earth": 0.88,
+        "air": 0.22,
+        "water": 0.65
+      },
+      "durationSeconds": 30,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/brown_noise.m4a",
+      "bundleFilename": "brown_noise.m4a"
+    },
+    {
+      "id": "pink_noise",
+      "name": "Pink Noise",
+      "tags": {
+        "domain": "electrical",
+        "rhythm": "steady",
+        "register": "full",
+        "context": "abstract",
+        "weight": "light",
+        "texture": "smooth",
+        "motion": "static",
+        "density": "moderate",
+        "temperature": "neutral",
+        "polarity": "balanced",
+        "celestial": "stellar",
+        "archetype": "mentor"
+      },
+      "elementScores": {
+        "fire": 0.42,
+        "earth": 0.48,
+        "air": 0.55,
+        "water": 0.45
+      },
+      "durationSeconds": 30,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/pink_noise.m4a",
+      "bundleFilename": "pink_noise.m4a"
+    },
+    {
+      "id": "binaural",
+      "name": "Tibetan / Binaural",
+      "tags": {
+        "domain": "cosmic",
+        "rhythm": "pulse",
+        "register": "sub",
+        "context": "spiritual",
+        "weight": "ethereal",
+        "texture": "crystalline",
+        "motion": "oscillating",
+        "density": "sparse",
+        "temperature": "cool",
+        "polarity": "receptive",
+        "celestial": "stellar",
+        "archetype": "crone"
+      },
+      "elementScores": {
+        "fire": 0.35,
+        "earth": 0.72,
+        "air": 0.68,
+        "water": 0.45
+      },
+      "durationSeconds": 120,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/binaural.m4a",
+      "bundleFilename": "binaural.m4a"
+    },
+    {
+      "id": "sprinklers",
+      "name": "Sprinklers",
+      "tags": {
+        "domain": "mechanical",
+        "rhythm": "pulse",
+        "register": "bright",
+        "context": "domestic",
+        "weight": "light",
+        "texture": "crystalline",
+        "motion": "pulsing",
+        "density": "sparse",
+        "temperature": "cool",
+        "polarity": "active",
+        "celestial": "planetary",
+        "archetype": "maiden"
+      },
+      "elementScores": {
+        "fire": 0.48,
+        "earth": 0.58,
+        "air": 0.62,
+        "water": 0.32
+      },
+      "durationSeconds": 45,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/sprinklers.m4a",
+      "bundleFilename": "sprinklers.m4a"
+    },
+    {
+      "id": "fan_low",
+      "name": "Box Fan (Low)",
+      "tags": {
+        "domain": "mechanical",
+        "rhythm": "steady",
+        "register": "deep",
+        "context": "domestic",
+        "weight": "light",
+        "texture": "smooth",
+        "motion": "static",
+        "density": "moderate",
+        "temperature": "cool",
+        "polarity": "neutral",
+        "celestial": "planetary",
+        "archetype": "mentor"
+      },
+      "elementScores": {
+        "fire": 0.32,
+        "earth": 0.68,
+        "air": 0.45,
+        "water": 0.35
+      },
+      "durationSeconds": 60,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/fan_low.m4a",
+      "bundleFilename": "fan_low.m4a"
+    },
+    {
+      "id": "fan_med",
+      "name": "Box Fan (Med)",
+      "tags": {
+        "domain": "mechanical",
+        "rhythm": "steady",
+        "register": "mid",
+        "context": "domestic",
+        "weight": "medium",
+        "texture": "smooth",
+        "motion": "static",
+        "density": "moderate",
+        "temperature": "cool",
+        "polarity": "neutral",
+        "celestial": "planetary",
+        "archetype": "mentor"
+      },
+      "elementScores": {
+        "fire": 0.35,
+        "earth": 0.65,
+        "air": 0.48,
+        "water": 0.32
+      },
+      "durationSeconds": 60,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/fan_med.m4a",
+      "bundleFilename": "fan_med.m4a"
+    },
+    {
+      "id": "fan_high",
+      "name": "Box Fan (High)",
+      "tags": {
+        "domain": "air",
+        "rhythm": "steady",
+        "register": "bright",
+        "context": "domestic",
+        "weight": "medium",
+        "texture": "diffuse",
+        "motion": "swirling",
+        "density": "moderate",
+        "temperature": "cool",
+        "polarity": "active",
+        "celestial": "planetary",
+        "archetype": "hero"
+      },
+      "elementScores": {
+        "fire": 0.55,
+        "earth": 0.35,
+        "air": 0.82,
+        "water": 0.28
+      },
+      "durationSeconds": 60,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/fan_high.m4a",
+      "bundleFilename": "fan_high.m4a"
+    },
+    {
+      "id": "wtfl_sm",
+      "name": "Small Waterfall",
+      "tags": {
+        "domain": "water",
+        "rhythm": "steady",
+        "register": "bright",
+        "context": "nature",
+        "weight": "medium",
+        "texture": "crystalline",
+        "motion": "flowing",
+        "density": "moderate",
+        "temperature": "cool",
+        "polarity": "receptive",
+        "celestial": "lunar",
+        "archetype": "maiden"
+      },
+      "elementScores": {
+        "fire": 0.38,
+        "earth": 0.52,
+        "air": 0.48,
+        "water": 0.72
+      },
+      "durationSeconds": 60,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/wtfl_sm.m4a",
+      "bundleFilename": "wtfl_sm.m4a"
+    },
+    {
+      "id": "wtfl_lg",
+      "name": "Large Waterfall",
+      "tags": {
+        "domain": "water",
+        "rhythm": "steady",
+        "register": "sub",
+        "context": "nature",
+        "weight": "heavy",
+        "texture": "rough",
+        "motion": "surging",
+        "density": "dense",
+        "temperature": "cool",
+        "polarity": "active",
+        "celestial": "lunar",
+        "archetype": "mother"
+      },
+      "elementScores": {
+        "fire": 0.42,
+        "earth": 0.65,
+        "air": 0.35,
+        "water": 0.88
+      },
+      "durationSeconds": 90,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/wtfl_lg.m4a",
+      "bundleFilename": "wtfl_lg.m4a"
+    },
+    {
+      "id": "car_rain",
+      "name": "Car in Rain",
+      "tags": {
+        "domain": "mechanical",
+        "rhythm": "rhythmic",
+        "register": "mid",
+        "context": "urban",
+        "weight": "medium",
+        "texture": "smooth",
+        "motion": "flowing",
+        "density": "dense",
+        "temperature": "cool",
+        "polarity": "receptive",
+        "celestial": "planetary",
+        "archetype": "shadow"
+      },
+      "elementScores": {
+        "fire": 0.35,
+        "earth": 0.62,
+        "air": 0.48,
+        "water": 0.55
+      },
+      "durationSeconds": 60,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/car_rain.m4a",
+      "bundleFilename": "car_rain.m4a"
+    },
+    {
+      "id": "dryer",
+      "name": "Clothes Dryer",
+      "tags": {
+        "domain": "mechanical",
+        "rhythm": "pulse",
+        "register": "deep",
+        "context": "domestic",
+        "weight": "medium",
+        "texture": "smooth",
+        "motion": "swirling",
+        "density": "moderate",
+        "temperature": "warm",
+        "polarity": "receptive",
+        "celestial": "planetary",
+        "archetype": "mother"
+      },
+      "elementScores": {
+        "fire": 0.42,
+        "earth": 0.72,
+        "air": 0.38,
+        "water": 0.48
+      },
+      "durationSeconds": 60,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/dryer.m4a",
+      "bundleFilename": "dryer.m4a"
+    },
+    {
+      "id": "lawn_mower",
+      "name": "Lawn Mower (Distant)",
+      "tags": {
+        "domain": "mechanical",
+        "rhythm": "steady",
+        "register": "deep",
+        "context": "urban",
+        "weight": "heavy",
+        "texture": "rough",
+        "motion": "static",
+        "density": "dense",
+        "temperature": "neutral",
+        "polarity": "active",
+        "celestial": "planetary",
+        "archetype": "hero"
+      },
+      "elementScores": {
+        "fire": 0.52,
+        "earth": 0.78,
+        "air": 0.42,
+        "water": 0.28
+      },
+      "durationSeconds": 60,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/lawn_mower.m4a",
+      "bundleFilename": "lawn_mower.m4a"
+    },
+    {
+      "id": "clock_tick",
+      "name": "Clock Ticking",
+      "tags": {
+        "domain": "mechanical",
+        "rhythm": "pulse",
+        "register": "bright",
+        "context": "domestic",
+        "weight": "light",
+        "texture": "crystalline",
+        "motion": "pulsing",
+        "density": "sparse",
+        "temperature": "neutral",
+        "polarity": "balanced",
+        "celestial": "planetary",
+        "archetype": "crone"
+      },
+      "elementScores": {
+        "fire": 0.42,
+        "earth": 0.55,
+        "air": 0.62,
+        "water": 0.41
+      },
+      "durationSeconds": 30,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/clock_tick.m4a",
+      "bundleFilename": "clock_tick.m4a"
+    },
+    {
+      "id": "sink_faucet",
+      "name": "Sink Faucet",
+      "tags": {
+        "domain": "water",
+        "rhythm": "steady",
+        "register": "bright",
+        "context": "domestic",
+        "weight": "light",
+        "texture": "smooth",
+        "motion": "flowing",
+        "density": "sparse",
+        "temperature": "cool",
+        "polarity": "receptive",
+        "celestial": "lunar",
+        "archetype": "maiden"
+      },
+      "elementScores": {
+        "fire": 0.32,
+        "earth": 0.45,
+        "air": 0.52,
+        "water": 0.71
+      },
+      "durationSeconds": 45,
+      "isNew": false,
+      "version": 1,
+      "cdnUrl": "https://cdn.astrosleep.app/sounds/sink_faucet.m4a",
+      "bundleFilename": "sink_faucet.m4a"
+    }
+  ]
+}
