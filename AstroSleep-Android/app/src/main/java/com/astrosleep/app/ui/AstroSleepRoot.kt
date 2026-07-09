@@ -1,5 +1,7 @@
 package com.astrosleep.app.ui
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.NightsStay
@@ -13,8 +15,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.astrosleep.app.R
 import com.astrosleep.app.state.AppViewModel
 import com.astrosleep.app.ui.library.LibraryScreen
 import com.astrosleep.app.ui.onboarding.OnboardingScreen
@@ -30,7 +36,12 @@ fun AstroSleepRoot(
     val state by viewModel.ui.collectAsStateWithLifecycle()
 
     if (state.isLoading && state.profile == null && !state.hasCompletedOnboarding) {
-        CircularProgressIndicator()
+        Box(contentAlignment = Alignment.Center) {
+            Image(
+                painter = painterResource(R.drawable.logo_astrosleep),
+                contentDescription = "AstroSleep",
+            )
+        }
         return
     }
 

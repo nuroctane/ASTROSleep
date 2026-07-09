@@ -1,15 +1,9 @@
 package com.astrosleep.app.ui.onboarding
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -21,7 +15,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.astrosleep.app.R
 import java.util.Calendar
 
 @Composable
@@ -51,6 +47,10 @@ fun OnboardingScreen(
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Image(
+            painter = painterResource(R.drawable.logo_astrosleep),
+            contentDescription = "AstroSleep",
+        )
         Text("Welcome to AstroSleep", style = MaterialTheme.typography.headlineMedium)
         Text(
             "Your birth data stays on this device. Never uploaded.",
@@ -103,7 +103,6 @@ fun OnboardingScreen(
                         set(Calendar.SECOND, 0)
                         set(Calendar.MILLISECOND, 0)
                     }
-                    // Pass separate birth-time epoch only when hour/min provided (default 12:00 still used for JD fraction via engine noon fallback if null).
                     val hasTime = hour.isNotBlank() && minute.isNotBlank()
                     onComplete(
                         name.ifBlank { "Dreamer" },

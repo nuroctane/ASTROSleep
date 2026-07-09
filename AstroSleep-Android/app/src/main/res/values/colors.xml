@@ -2,4 +2,5 @@
 <resources>
     <color name="ic_launcher_background">#0B0B1A</color>
     <color name="accent">#5856D6</color>
+    <color name="logo_night">#0B0B1A</color>
 </resources>

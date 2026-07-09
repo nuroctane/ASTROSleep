@@ -70,17 +70,20 @@ struct IntroStepView: View {
         IntroPage(
             title: "Sleep with Intention",
             description: "AstroSleep curates your sonic environment based on your astrological chart and the current night sky.",
-            icon: "moon.stars.fill"
+            icon: "moon.stars.fill",
+            useAppLogo: true
         ),
         IntroPage(
             title: "Astrological Personalization",
             description: "Your natal chart and live transits guide sound recommendations tailored to your energetic state.",
-            icon: "star.circle.fill"
+            icon: "star.circle.fill",
+            useAppLogo: false
         ),
         IntroPage(
             title: "Subliminal Affirmations",
             description: "Set an intention and receive AI-generated affirmations that play softly beneath your sleep sounds.",
-            icon: "waveform"
+            icon: "waveform",
+            useAppLogo: false
         )
     ]
     
@@ -126,6 +129,7 @@ struct IntroPage: Identifiable {
     let title: String
     let description: String
     let icon: String
+    var useAppLogo: Bool = false
 }
 
 struct IntroPageView: View {
@@ -135,10 +139,19 @@ struct IntroPageView: View {
         VStack(spacing: 24) {
             Spacer()
             
-            Image(systemName: page.icon)
-                .font(.system(size: 80))
-                .foregroundColor(ThemeService.shared.accentColor)
-                .symbolRenderingMode(.multicolor)
+            if page.useAppLogo {
+                Image("Logo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 120, height: 120)
+                    .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                    .shadow(color: Color.indigo.opacity(0.35), radius: 16, y: 8)
+            } else {
+                Image(systemName: page.icon)
+                    .font(.system(size: 80))
+                    .foregroundColor(ThemeService.shared.accentColor)
+                    .symbolRenderingMode(.multicolor)
+            }
             
             Text(page.title)
                 .font(.largeTitle)

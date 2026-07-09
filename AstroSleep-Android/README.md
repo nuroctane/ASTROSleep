@@ -1,5 +1,9 @@
 # AstroSleep Android
 
+<p align="center">
+  <img src="../branding/astrosleep-logo-256.png" alt="AstroSleep" width="96" height="96" />
+</p>
+
 Native Android port of AstroSleep (Kotlin + Jetpack Compose).  
 iOS source of truth: `../AstroSleep-iOS/` · plan: `../documentation/ANDROID_PORT_PLAN.md`
 

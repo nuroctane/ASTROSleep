@@ -1,6 +1,10 @@
 # AstroSleep
 
-**Personalized sleep soundscapes driven by your natal chart, tonight’s sky, and a 12-dimensional sound tag engine.**
+<p align="center">
+  <img src="branding/astrosleep-logo-readme.png" alt="AstroSleep logo" width="160" height="160" />
+</p>
+
+<p align="center"><strong>Personalized sleep soundscapes driven by your natal chart, tonight’s sky, and a 12-dimensional sound tag engine.</strong></p>
 
 AstroSleep is a dual-platform native app (iOS + Android) that:
 
@@ -85,12 +89,17 @@ Playback (multi-track ambient + optional TTS affirmation)
 ```
 ASTROSleep/
 ├── README.md                          ← you are here
+├── branding/                          # Logo master assets (temporary brand mark)
+│   ├── astrosleep-logo.png            # 1024 master
+│   └── README.md
 ├── .gitignore
 ├── AstroSleep-iOS/                    # Native iOS app
 │   ├── AstroSleep/                    # Swift sources, Core Data, entitlements
+│   │   └── Resources/Assets.xcassets  # AppIcon + Logo imageset
 │   └── Sounds/                        # sounds_manifest.json + validate_manifest.py
 ├── AstroSleep-Android/                # Native Android app
 │   ├── app/                           # Gradle module (Compose UI, engines, services)
+│   │   └── src/main/res/mipmap-*      # Launcher icons
 │   ├── gradle/                        # Wrapper
 │   └── README.md                      # Android-specific setup
 ├── documentation/                     # Specs, guides, changelogs, port plan
