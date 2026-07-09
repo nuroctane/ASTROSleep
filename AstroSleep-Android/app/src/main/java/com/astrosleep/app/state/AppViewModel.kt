@@ -197,15 +197,17 @@ class AppViewModel @Inject constructor(
         if (last != null && isSameDay(last, now) && _ui.value.nightlyScore != null) {
             return
         }
-        val transitLat = if (profile.useCurrentLocationForTransits) profile.currentLat else profile.birthLat
-        val transitLng = if (profile.useCurrentLocationForTransits) profile.currentLng else profile.birthLng
+        val wantGps = profile.useCurrentLocationForTransits
+        val gpsOk = wantGps && (kotlin.math.abs(profile.currentLat) > 1e-6 || kotlin.math.abs(profile.currentLng) > 1e-6)
+        val transitLat = if (gpsOk) profile.currentLat else profile.birthLat
+        val transitLng = if (gpsOk) profile.currentLng else profile.birthLng
         val score = astroEngine.calculateNightlyScore(
             baseScore = profile.baseScore,
             dateEpochMs = now,
             natalChart = chart,
             currentLat = transitLat,
             currentLng = transitLng,
-            useCurrentLocation = true, // coordinates already resolved (birth or GPS)
+            useCurrentLocation = gpsOk || !wantGps, // birth place when GPS requested but unset
         )
         lastNightlyScoreDate = now
         _ui.update { it.copy(nightlyScore = score) }
@@ -264,53 +266,71 @@ class AppViewModel @Inject constructor(
         }
     }
 
-    fun startSession(combo: Combo? = null, sleepTimerMinutes: Int? = null) {
-        val c = combo ?: _ui.value.activeCombo ?: autoGenerateCombo()
-        _ui.update { it.copy(activeCombo = c, errorMessage = null) }
-        audioService.loadCombo(c)
-        if (audioService.errorMessage.value != null) {
-            _ui.update { it.copy(errorMessage = audioService.errorMessage.value) }
-            return
-        }
-        val timer = sleepTimerMinutes
-            ?: c.sleepTimerMinutes
-            ?: _ui.value.profile?.sleepTimerDefault
-        audioService.play(timer)
-        // Prefer live affirmation text, then daily cache
-        val script = c.affirmationLayer.text.takeIf { it.isNotBlank() }
-            ?: _ui.value.cachedAffirmation
-        script?.let {
-            audioService.speakAffirmation(it, c.affirmationLayer.volume.toFloat())
+    fun startSession(combo: Combo? = null, sleepTimerMinutes: Int? = null, intention: String = "") {
+        viewModelScope.launch {
+            // Ensure affirmation cache is warm before speak (iOS parity)
+            ensureAffirmation(intention.ifBlank { "Sleep well" })
+            val c = combo ?: _ui.value.activeCombo ?: autoGenerateCombo(intention)
+            val script = c.affirmationLayer.text.takeIf { it.isNotBlank() }
+                ?: _ui.value.cachedAffirmation
+            val withVoice = if (!script.isNullOrBlank() && c.affirmationLayer.text.isBlank()) {
+                c.copy(
+                    affirmationLayer = c.affirmationLayer.copy(text = script),
+                )
+            } else {
+                c
+            }
+            _ui.update { it.copy(activeCombo = withVoice, errorMessage = null) }
+            audioService.loadCombo(withVoice)
+            if (audioService.errorMessage.value != null) {
+                _ui.update { it.copy(errorMessage = audioService.errorMessage.value) }
+                return@launch
+            }
+            val timer = sleepTimerMinutes
+                ?: withVoice.sleepTimerMinutes
+                ?: _ui.value.profile?.sleepTimerDefault
+            audioService.play(timer)
+            val speak = withVoice.affirmationLayer.text.takeIf { it.isNotBlank() }
+                ?: _ui.value.cachedAffirmation
+            speak?.let {
+                audioService.speakAffirmation(it, withVoice.affirmationLayer.volume.toFloat())
+            }
         }
     }
 
-    fun pauseSession() = audioService.pause()
+    fun pauseSession() = audioService.pause(fromUser = true)
     fun resumeSession() = audioService.resume()
     fun stopSession() = audioService.stopAll()
 
     fun getOrCreateAffirmation(intention: String) {
-        viewModelScope.launch {
-            val dateId = utcDateString(System.currentTimeMillis())
-            storage.loadAffirmationCache(dateId)?.let { cache ->
-                _ui.update { it.copy(cachedAffirmation = cache.script) }
-                return@launch
-            }
-            val userId = authService.currentUserId ?: return@launch
-            try {
-                val script = networkService.generateAffirmation(intention, userId)
-                storage.cacheAffirmation(
-                    AffirmationCache(
-                        id = dateId,
-                        script = script,
-                        generatedAtEpochMs = System.currentTimeMillis(),
-                        intention = intention,
-                    ),
-                )
-                _ui.update { it.copy(cachedAffirmation = script) }
-            } catch (_: NetworkError.RateLimited) {
-                // silent — rate limited
-            } catch (e: Exception) {
-                _ui.update { it.copy(errorMessage = e.message) }
+        viewModelScope.launch { ensureAffirmation(intention) }
+    }
+
+    private suspend fun ensureAffirmation(intention: String) {
+        val dateId = utcDateString(System.currentTimeMillis())
+        storage.loadAffirmationCache(dateId)?.let { cache ->
+            _ui.update { it.copy(cachedAffirmation = cache.script) }
+            return
+        }
+        if (_ui.value.cachedAffirmation != null) return
+        val userId = authService.currentUserId ?: return
+        try {
+            val script = networkService.generateAffirmation(intention, userId)
+            storage.cacheAffirmation(
+                AffirmationCache(
+                    id = dateId,
+                    script = script,
+                    generatedAtEpochMs = System.currentTimeMillis(),
+                    intention = intention,
+                ),
+            )
+            _ui.update { it.copy(cachedAffirmation = script) }
+        } catch (_: NetworkError.RateLimited) {
+            // silent — rate limited; session still plays ambient
+        } catch (e: Exception) {
+            // Offline: keep ambient; surface soft error only if nothing else
+            if (_ui.value.cachedAffirmation == null) {
+                _ui.update { it.copy(errorMessage = null) }
             }
         }
     }
@@ -332,7 +352,29 @@ class AppViewModel @Inject constructor(
     }
 
     fun restorePurchases() {
-        revenueCat.restorePurchases { }
+        revenueCat.restorePurchases { result ->
+            result.onSuccess { tier ->
+                _ui.update { it.copy(currentTier = tier, errorMessage = null) }
+            }.onFailure { e ->
+                _ui.update { it.copy(errorMessage = e.message ?: "Restore failed") }
+            }
+        }
+    }
+
+    fun purchaseSubscription() {
+        revenueCat.purchaseSubscription { result ->
+            result.onSuccess { tier ->
+                _ui.update {
+                    it.copy(currentTier = tier, showPaywall = false, errorMessage = null)
+                }
+            }.onFailure { e ->
+                _ui.update { it.copy(errorMessage = e.message ?: "Purchase failed") }
+            }
+        }
+    }
+
+    fun openPlaySubscriptions() {
+        revenueCat.openManageSubscriptions()
     }
 
     private fun createDefaultCombo(tier: SubscriptionTier): Combo {

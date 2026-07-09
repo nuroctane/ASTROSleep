@@ -354,12 +354,8 @@ class AstrologicalEngine @Inject constructor() {
         currentLng: Double,
         useCurrentLocation: Boolean,
     ): List<Transit> {
-        val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = dateEpochMs }
-        val julianDay = julianDayFor(
-            cal.get(Calendar.YEAR),
-            cal.get(Calendar.MONTH) + 1,
-            cal.get(Calendar.DAY_OF_MONTH),
-        )
+        // Full UTC JD including time-of-day (natal path already uses dayFraction)
+        val julianDay = julianDayFromEpochMs(dateEpochMs)
 
         val currentAscendant = if (useCurrentLocation) {
             computeAscendant(julianDay, currentLat, currentLng)
@@ -400,17 +396,25 @@ class AstrologicalEngine @Inject constructor() {
         return transits.sortedByDescending { it.strength }
     }
 
+    /** Julian day (UTC) with fractional day from epoch ms — used for live sky + natal. */
+    internal fun julianDayFromEpochMs(epochMs: Long): Double {
+        val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = epochMs }
+        val y = cal.get(Calendar.YEAR)
+        val m = cal.get(Calendar.MONTH) + 1
+        val d = cal.get(Calendar.DAY_OF_MONTH)
+        val h = cal.get(Calendar.HOUR_OF_DAY).toDouble()
+        val min = cal.get(Calendar.MINUTE).toDouble()
+        val s = cal.get(Calendar.SECOND).toDouble() + cal.get(Calendar.MILLISECOND) / 1000.0
+        val dayFraction = (h + min / 60.0 + s / 3600.0) / 24.0
+        return julianDayFor(y, m, d) + dayFraction
+    }
+
     private fun simplifiedCurrentPlacements(
         dateEpochMs: Long,
         lat: Double,
         lng: Double,
     ): List<ChartPlacement> {
-        val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = dateEpochMs }
-        val julianDay = julianDayFor(
-            cal.get(Calendar.YEAR),
-            cal.get(Calendar.MONTH) + 1,
-            cal.get(Calendar.DAY_OF_MONTH),
-        )
+        val julianDay = julianDayFromEpochMs(dateEpochMs)
         val currentAscendant = if (lat != 0.0 || lng != 0.0) {
             computeAscendant(julianDay, lat, lng)
         } else {

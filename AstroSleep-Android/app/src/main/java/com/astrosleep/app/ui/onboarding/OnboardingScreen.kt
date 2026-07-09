@@ -16,6 +16,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -61,6 +62,7 @@ fun OnboardingScreen(
     var day by remember { mutableStateOf("15") }
     var hour by remember { mutableStateOf("12") }
     var minute by remember { mutableStateOf("0") }
+    var knowsBirthTime by remember { mutableStateOf(true) }
     var lat by remember { mutableStateOf("40.7128") }
     var lng by remember { mutableStateOf("-74.0060") }
     var tzId by remember { mutableStateOf(TimeZone.getDefault().id) }
@@ -134,15 +136,31 @@ fun OnboardingScreen(
             )
         }
 
-        Text("Birth time 24h (local)", style = MaterialTheme.typography.labelLarge, color = SeaFaint)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            OutlinedTextField(
-                value = hour, onValueChange = { hour = it }, label = { Text("Hour") },
-                modifier = Modifier.weight(1f), colors = fieldColors, singleLine = true,
-            )
-            OutlinedTextField(
-                value = minute, onValueChange = { minute = it }, label = { Text("Min") },
-                modifier = Modifier.weight(1f), colors = fieldColors, singleLine = true,
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("I know my birth time", color = SeaText, style = MaterialTheme.typography.bodyMedium)
+            Switch(checked = knowsBirthTime, onCheckedChange = { knowsBirthTime = it })
+        }
+        if (knowsBirthTime) {
+            Text("Birth time 24h (local)", style = MaterialTheme.typography.labelLarge, color = SeaFaint)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = hour, onValueChange = { hour = it }, label = { Text("Hour") },
+                    modifier = Modifier.weight(1f), colors = fieldColors, singleLine = true,
+                )
+                OutlinedTextField(
+                    value = minute, onValueChange = { minute = it }, label = { Text("Min") },
+                    modifier = Modifier.weight(1f), colors = fieldColors, singleLine = true,
+                )
+            }
+        } else {
+            Text(
+                "Ascendant/houses use noon default when birth time is unknown.",
+                style = MaterialTheme.typography.bodySmall,
+                color = SeaFaint,
             )
         }
 
@@ -197,7 +215,12 @@ fun OnboardingScreen(
                         set(Calendar.SECOND, 0)
                         set(Calendar.MILLISECOND, 0)
                     }
-                    val hasTime = hour.isNotBlank() && minute.isNotBlank()
+                    val hasTime = knowsBirthTime && hour.isNotBlank() && minute.isNotBlank()
+                    if (!knowsBirthTime) {
+                        // Noon local for date-only path (engine uses null time → noon JD fraction)
+                        cal.set(Calendar.HOUR_OF_DAY, 12)
+                        cal.set(Calendar.MINUTE, 0)
+                    }
                     onComplete(
                         name.ifBlank { "Dreamer" },
                         cal.timeInMillis,

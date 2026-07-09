@@ -133,8 +133,11 @@ struct SubscriptionPackage: Identifiable {
     var displayPrice: String {
         if isMonthly {
             return "\(localizedPriceString)/month"
-        } else {
-            return "\(localizedPriceString)/year"
         }
+        // Lifetime is one-time — never suffix "/year"
+        if tier == .lifetime {
+            return "\(localizedPriceString) once"
+        }
+        return "\(localizedPriceString)/year"
     }
 }

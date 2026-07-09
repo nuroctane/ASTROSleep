@@ -53,35 +53,52 @@ class PlaybackService : Service() {
                 return START_NOT_STICKY
             }
             ACTION_PAUSE -> {
+                // User tapped notification action — toggle into AudioService
                 sendBroadcast(Intent(ACTION_PAUSE).setPackage(packageName))
-                mediaSession?.setPlaybackState(
-                    PlaybackStateCompat.Builder()
-                        .setActions(
-                            PlaybackStateCompat.ACTION_PLAY or
-                                PlaybackStateCompat.ACTION_STOP or
-                                PlaybackStateCompat.ACTION_PLAY_PAUSE,
-                        )
-                        .setState(PlaybackStateCompat.STATE_PAUSED, 0L, 0f)
-                        .build(),
-                )
+                // Actual playing state updated when AudioService echoes ACTION_SYNC_* / START
+                return START_STICKY
+            }
+            ACTION_SYNC_PAUSED -> {
+                setSessionState(playing = false)
                 startForeground(NOTIFICATION_ID, buildNotification(playing = false))
                 return START_STICKY
             }
             else -> {
-                mediaSession?.setPlaybackState(
-                    PlaybackStateCompat.Builder()
-                        .setActions(
-                            PlaybackStateCompat.ACTION_PAUSE or
-                                PlaybackStateCompat.ACTION_STOP or
-                                PlaybackStateCompat.ACTION_PLAY_PAUSE,
-                        )
-                        .setState(PlaybackStateCompat.STATE_PLAYING, 0L, 1f)
-                        .build(),
-                )
+                // ACTION_START or null
+                setSessionState(playing = true)
                 startForeground(NOTIFICATION_ID, buildNotification(playing = true))
             }
         }
         return START_STICKY
+    }
+
+    private fun setSessionState(playing: Boolean) {
+        mediaSession?.setPlaybackState(
+            PlaybackStateCompat.Builder()
+                .setActions(
+                    PlaybackStateCompat.ACTION_PLAY or
+                        PlaybackStateCompat.ACTION_PAUSE or
+                        PlaybackStateCompat.ACTION_STOP or
+                        PlaybackStateCompat.ACTION_PLAY_PAUSE,
+                )
+                .setState(
+                    if (playing) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED,
+                    0L,
+                    if (playing) 1f else 0f,
+                )
+                .build(),
+        )
+        mediaSession?.setCallback(object : MediaSessionCompat.Callback() {
+            override fun onPlay() {
+                sendBroadcast(Intent(ACTION_PAUSE).setPackage(packageName))
+            }
+            override fun onPause() {
+                sendBroadcast(Intent(ACTION_PAUSE).setPackage(packageName))
+            }
+            override fun onStop() {
+                sendBroadcast(Intent(ACTION_STOP).setPackage(packageName))
+            }
+        })
     }
 
     private fun buildNotification(playing: Boolean): Notification {
@@ -156,6 +173,8 @@ class PlaybackService : Service() {
         const val ACTION_START = "com.astrosleep.app.playback.START"
         const val ACTION_STOP = "com.astrosleep.app.playback.STOP"
         const val ACTION_PAUSE = "com.astrosleep.app.playback.PAUSE"
+        /** In-app pause: update notification without re-broadcasting pause (avoids toggle loop). */
+        const val ACTION_SYNC_PAUSED = "com.astrosleep.app.playback.SYNC_PAUSED"
         private const val CHANNEL_ID = "astrosleep_playback"
         private const val NOTIFICATION_ID = 42
     }

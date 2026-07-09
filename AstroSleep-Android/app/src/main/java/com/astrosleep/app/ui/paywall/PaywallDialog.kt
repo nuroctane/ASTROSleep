@@ -1,4 +1,4 @@
-﻿package com.astrosleep.app.ui.paywall
+package com.astrosleep.app.ui.paywall
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,6 +21,7 @@ fun PaywallDialog(
     trigger: String,
     onDismiss: () -> Unit,
     onRestore: () -> Unit,
+    onPurchase: () -> Unit = {},
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -48,21 +49,29 @@ fun PaywallDialog(
             }
         },
         confirmButton = {
-            SeaPrimaryButton(
-                text = "Not now",
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                SeaPrimaryButton(
+                    text = "Continue to purchase",
+                    onClick = {
+                        onPurchase()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                SeaSecondaryButton(
+                    text = "Restore purchases",
+                    onClick = {
+                        onRestore()
+                        onDismiss()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                SeaSecondaryButton(
+                    text = "Not now",
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         },
-        dismissButton = {
-            SeaSecondaryButton(
-                text = "Restore purchases",
-                onClick = {
-                    onRestore()
-                    onDismiss()
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
-        },
+        dismissButton = {},
     )
 }

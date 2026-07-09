@@ -455,11 +455,8 @@ final class AstrologicalEngine {
         currentLng: Double = 0,
         useCurrentLocation: Bool = false
     ) -> [Transit] {
-        let julianDay = julianDayFor(
-            year: Calendar.current.component(.year, from: date),
-            month: Calendar.current.component(.month, from: date),
-            day: Calendar.current.component(.day, from: date)
-        )
+        // Full UTC JD with time-of-day (matches natal dayFraction path)
+        let julianDay = julianDayFromDate(date)
         
         var transits: [Transit] = []
         
@@ -506,12 +503,22 @@ final class AstrologicalEngine {
         return transits.sorted { $0.strength > $1.strength }
     }
     
+    /// UTC Julian Day including fractional hours from the absolute instant.
+    private func julianDayFromDate(_ date: Date) -> Double {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(secondsFromGMT: 0)!
+        let y = cal.component(.year, from: date)
+        let m = cal.component(.month, from: date)
+        let d = cal.component(.day, from: date)
+        let h = Double(cal.component(.hour, from: date))
+        let min = Double(cal.component(.minute, from: date))
+        let s = Double(cal.component(.second, from: date))
+        let dayFraction = (h + min / 60.0 + s / 3600.0) / 24.0
+        return julianDayFor(year: y, month: m, day: d) + dayFraction
+    }
+
     private func simplifiedCurrentPlacements(date: Date, lat: Double = 0, lng: Double = 0) -> [ChartPlacement] {
-        let julianDay = julianDayFor(
-            year: Calendar.current.component(.year, from: date),
-            month: Calendar.current.component(.month, from: date),
-            day: Calendar.current.component(.day, from: date)
-        )
+        let julianDay = julianDayFromDate(date)
         
         // Compute current ascendant from provided location (birth or current)
         let currentAscendant = (lat != 0 || lng != 0)

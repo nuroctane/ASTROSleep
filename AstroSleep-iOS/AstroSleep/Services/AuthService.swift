@@ -230,6 +230,8 @@ final class AuthService: ObservableObject {
                         }
                     } else {
                         try await refreshSession()
+                        // Re-validate identity after token refresh
+                        await fetchAndApplyUser()
                     }
                 }
             } catch {
@@ -264,6 +266,35 @@ final class AuthService: ObservableObject {
            let newRefreshToken = json?["refresh_token"] as? String {
             try await SecureStorage.saveToken(newAccessToken, key: "access_token")
             try await SecureStorage.saveToken(newRefreshToken, key: "refresh_token")
+        }
+        // Prefer user object nested in refresh response when present
+        if let user = json?["user"] as? [String: Any], let id = user["id"] as? String {
+            await MainActor.run {
+                self.isAuthenticated = true
+                self.currentUserId = id
+            }
+        }
+    }
+
+    /// GET /auth/v1/user and set currentUserId + isAuthenticated.
+    private func fetchAndApplyUser() async {
+        do {
+            guard let accessToken = try await SecureStorage.getToken(key: "access_token"),
+                  !accessToken.isEmpty else { return }
+            let url = supabaseURL.appendingPathComponent("/auth/v1/user")
+            var request = URLRequest(url: url)
+            request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+            request.setValue(supabaseAnonKey, forHTTPHeaderField: "apikey")
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return }
+            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            let uid = json?["id"] as? String
+            await MainActor.run {
+                self.isAuthenticated = uid != nil
+                self.currentUserId = uid
+            }
+        } catch {
+            print("fetchAndApplyUser error: \(error)")
         }
     }
     

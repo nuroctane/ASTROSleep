@@ -367,17 +367,23 @@ python AstroSleep-iOS/Sounds/validate_manifest.py
 - [x] **MediaStyle lockscreen** notification (Pause / Stop) + MediaSessionCompat shell on Android  
 - [x] Auth shell — encrypted local id + email identity; Supabase-ready hook when keys set  
 - [x] Birth **timezone ID** field on Android onboarding (device default)  
+- [x] Audio focus: transient vs user pause; notification sync; MediaSession callbacks  
+- [x] Affirmation pipeline wired on Android Begin + `user_id` API parity  
+- [x] Full UTC JD for nightly/transit sky (Android + iOS)  
+- [x] iOS auth refresh re-applies `currentUserId`  
+- [x] Android RC purchase path + Play manage deep-link; optional birth-time toggle  
 
 ### Still open
 
 - [ ] Ship bundled or reliably cached **audio assets** for offline first-run  
-- [ ] Production **RevenueCat + StoreKit / Play Billing** product wiring (DEBUG unlocks stay DEBUG-only)  
+- [ ] Production **StoreKit** RC wiring on iOS (SDK package still stubbed outside key config)  
 - [ ] Full **Supabase** magic-link / Google Sign-In (keys + NetworkService OTP send)  
 - [ ] Port **TagEngine v4** personalization to iOS for parity (Android ships v4; iOS remains v3 until port)  
 - [ ] Geocoder polish (city → lat/lng)  
 - [ ] Bedtime notifications (boot-safe, runtime permissions)  
 - [ ] Swiss Ephemeris (or equivalent) for production-grade positions  
-- [ ] Deeper Media3 `MediaSession` service binding (play/pause wired via broadcast today)  
+- [ ] Android EQ apply on ExoPlayer layers  
+
 
 ---
 

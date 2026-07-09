@@ -43,6 +43,7 @@ fun SettingsScreen(
     onRestore: () -> Unit,
     onSignInEmail: (String) -> Unit = {},
     onSignOut: () -> Unit = {},
+    onManageSubscription: () -> Unit = {},
     localUserId: String? = null,
     authStatusMessage: String? = null,
 ) {
@@ -140,7 +141,7 @@ fun SettingsScreen(
                 )
                 SeaSecondaryButton(
                     text = "Manage in Play Store",
-                    onClick = onRestore, // opens restore path; full manage deep-link when RC configured
+                    onClick = onManageSubscription,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }

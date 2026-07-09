@@ -82,7 +82,9 @@ class AudioService @Inject constructor(
     private var ttsReady = false
     private var pendingSpeech: Pair<String, Float>? = null
     private var focusRequest: AudioFocusRequest? = null
+    /** True only when the user (or permanent focus loss) requested pause — not transient duck/interrupt. */
     private var userPaused = false
+    private var pausedByFocus = false
     /** Volume before fade; restored after stop so next session is audible. */
     private var volumeBeforeFade: Double = 1.0
 
@@ -90,7 +92,8 @@ class AudioService @Inject constructor(
         override fun onReceive(ctx: Context?, intent: Intent?) {
             when (intent?.action) {
                 PlaybackService.ACTION_PAUSE -> {
-                    if (_isPlaying.value) pause() else resume()
+                    // Notification toggle: pause when playing, resume when paused
+                    if (_isPlaying.value) pause(fromUser = true) else resume()
                 }
                 PlaybackService.ACTION_STOP -> stopAll(resetMasterVolume = true)
             }
@@ -163,11 +166,12 @@ class AudioService @Inject constructor(
             return
         }
         userPaused = false
+        pausedByFocus = false
         layers.values.forEach { it.player.play() }
         _isPlaying.value = true
         _state.value = AudioState.PLAYING
         startLfo()
-        startPlaybackService()
+        notifyPlaybackService(playing = true)
         if (sleepTimerMinutes != null && sleepTimerMinutes > 0) {
             startSleepTimer(sleepTimerMinutes)
         } else if (sleepTimerMinutes != null && sleepTimerMinutes <= 0) {
@@ -176,12 +180,22 @@ class AudioService @Inject constructor(
         }
     }
 
-    fun pause() {
-        userPaused = true
+    /**
+     * @param fromUser true for UI / notification / permanent focus loss.
+     *        Transient focus loss must pass false so GAIN can auto-resume.
+     */
+    fun pause(fromUser: Boolean = true) {
+        if (fromUser) {
+            userPaused = true
+            pausedByFocus = false
+        } else {
+            pausedByFocus = true
+        }
         layers.values.forEach { it.player.pause() }
         _isPlaying.value = false
         _state.value = AudioState.PAUSED
         lfoJob?.cancel()
+        notifyPlaybackService(playing = false)
     }
 
     fun resume() {
@@ -191,12 +205,13 @@ class AudioService @Inject constructor(
             return
         }
         userPaused = false
+        pausedByFocus = false
         if (!requestAudioFocus()) return
         layers.values.forEach { it.player.play() }
         _isPlaying.value = true
         _state.value = AudioState.PLAYING
         startLfo()
-        startPlaybackService()
+        notifyPlaybackService(playing = true)
     }
 
     /**
@@ -256,8 +271,11 @@ class AudioService @Inject constructor(
 
     private fun speakNow(text: String, volume: Float) {
         tts?.setSpeechRate(0.9f)
-        // Relative volume best-effort via utterance params is limited; keep call site volume for future
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, UUID.randomUUID().toString())
+        val params = android.os.Bundle().apply {
+            // Soft under ambient (0.05–0.35 typical for affirmation layer)
+            putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, volume.coerceIn(0.05f, 1f))
+        }
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, UUID.randomUUID().toString())
     }
 
     fun fadeOut(durationMs: Long = 15_000L) {
@@ -361,14 +379,33 @@ class AudioService @Inject constructor(
         return sound.cdnUrl.ifBlank { null }
     }
 
-    private fun startPlaybackService() {
-        val intent = Intent(context, PlaybackService::class.java).setAction(PlaybackService.ACTION_START)
-        ContextCompat.startForegroundService(context, intent)
+    /** Start or refresh FGS + MediaSession state so lockscreen matches in-app controls. */
+    private fun notifyPlaybackService(playing: Boolean) {
+        val action = if (playing) PlaybackService.ACTION_START else PlaybackService.ACTION_SYNC_PAUSED
+        val intent = Intent(context, PlaybackService::class.java).setAction(action)
+        if (playing) {
+            ContextCompat.startForegroundService(context, intent)
+        } else {
+            // Service may already be running — update notification without re-START race
+            try {
+                context.startService(intent)
+            } catch (_: Exception) {
+                ContextCompat.startForegroundService(
+                    context,
+                    Intent(context, PlaybackService::class.java).setAction(PlaybackService.ACTION_START),
+                )
+                context.startService(Intent(context, PlaybackService::class.java).setAction(action))
+            }
+        }
     }
 
     private fun stopPlaybackService() {
         val intent = Intent(context, PlaybackService::class.java).setAction(PlaybackService.ACTION_STOP)
-        context.startService(intent)
+        try {
+            context.startService(intent)
+        } catch (_: Exception) {
+            // already stopped
+        }
     }
 
     private fun requestAudioFocus(): Boolean {
@@ -383,17 +420,17 @@ class AudioService @Inject constructor(
                 .setOnAudioFocusChangeListener { focus ->
                     when (focus) {
                         AudioManager.AUDIOFOCUS_LOSS -> {
-                            pause()
+                            pause(fromUser = true)
                             abandonAudioFocus()
                         }
-                        AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> pause()
+                        AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> pause(fromUser = false)
                         AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
                             layers.values.forEach { it.player.volume = it.baseVolume * 0.3f }
                         }
                         AudioManager.AUDIOFOCUS_GAIN -> {
-                            if (!userPaused && _state.value == AudioState.PAUSED) {
+                            if (!userPaused && (pausedByFocus || _state.value == AudioState.PAUSED)) {
                                 resume()
-                            } else {
+                            } else if (_isPlaying.value) {
                                 layers.values.forEach {
                                     it.player.volume = (it.baseVolume * _masterVolume.value).toFloat()
                                 }
@@ -408,10 +445,12 @@ class AudioService @Inject constructor(
             @Suppress("DEPRECATION")
             audioManager.requestAudioFocus(
                 { focus ->
-                    if (focus == AudioManager.AUDIOFOCUS_LOSS ||
-                        focus == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT
-                    ) {
-                        pause()
+                    when (focus) {
+                        AudioManager.AUDIOFOCUS_LOSS -> pause(fromUser = true)
+                        AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> pause(fromUser = false)
+                        AudioManager.AUDIOFOCUS_GAIN -> {
+                            if (!userPaused && pausedByFocus) resume()
+                        }
                     }
                 },
                 AudioManager.STREAM_MUSIC,

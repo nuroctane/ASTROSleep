@@ -3,6 +3,7 @@ package com.astrosleep.app.service
 import com.astrosleep.app.core.config.AppConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -25,24 +26,31 @@ class NetworkService @Inject constructor(
     private val json = Json { ignoreUnknownKeys = true }
     private val mediaType = "application/json; charset=utf-8".toMediaType()
 
+    /** Matches iOS NetworkService snake_case contract. */
     @Serializable
-    private data class AffirmationRequest(val intention: String, val userId: String)
+    private data class AffirmationRequest(
+        val intention: String,
+        @SerialName("user_id") val userId: String,
+    )
 
     @Serializable
     private data class AffirmationResponse(val script: String? = null, val affirmation: String? = null)
 
-    suspend fun generateAffirmation(intention: String, userId: String): String =
+    suspend fun generateAffirmation(intention: String, userId: String, bearerToken: String? = null): String =
         withContext(Dispatchers.IO) {
             val body = json.encodeToString(
                 AffirmationRequest.serializer(),
                 AffirmationRequest(intention = intention, userId = userId),
             ).toRequestBody(mediaType)
 
-            val request = Request.Builder()
+            val requestBuilder = Request.Builder()
                 .url("${AppConfig.proxyBaseUrl.trimEnd('/')}/affirmation")
                 .post(body)
                 .header("Content-Type", "application/json")
-                .build()
+            if (!bearerToken.isNullOrBlank()) {
+                requestBuilder.header("Authorization", "Bearer $bearerToken")
+            }
+            val request = requestBuilder.build()
 
             try {
                 client.newCall(request).execute().use { response ->

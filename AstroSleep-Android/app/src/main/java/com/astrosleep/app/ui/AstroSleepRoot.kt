@@ -103,6 +103,7 @@ fun AstroSleepRoot(
                     onRestore = { viewModel.restorePurchases() },
                     onSignInEmail = { viewModel.linkEmail(it) },
                     onSignOut = { viewModel.signOutLocal() },
+                    onManageSubscription = { viewModel.openPlaySubscriptions() },
                     localUserId = state.localUserId,
                     authStatusMessage = state.authStatusMessage,
                 )
@@ -115,6 +116,7 @@ fun AstroSleepRoot(
             trigger = state.paywallTrigger,
             onDismiss = { viewModel.dismissPaywall() },
             onRestore = { viewModel.restorePurchases() },
+            onPurchase = { viewModel.purchaseSubscription() },
         )
     }
 }

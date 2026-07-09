@@ -1,13 +1,21 @@
 package com.astrosleep.app.service
 
+import android.app.Activity
 import android.app.Application
+import android.content.Intent
+import android.net.Uri
 import com.astrosleep.app.core.config.AppConfig
 import com.astrosleep.app.core.model.SubscriptionTier
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
+import com.revenuecat.purchases.models.StoreTransaction
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +34,11 @@ class RevenueCatService @Inject constructor(
     val currentTier: StateFlow<SubscriptionTier> = _currentTier.asStateFlow()
 
     private var configured = false
+    private var activityProvider: (() -> Activity?)? = null
+
+    fun setActivityProvider(provider: () -> Activity?) {
+        activityProvider = provider
+    }
 
     fun configureIfNeeded() {
         if (configured) return
@@ -70,6 +83,62 @@ class RevenueCatService @Inject constructor(
                 onDone(Result.failure(Exception(error.message)))
             }
         })
+    }
+
+    /**
+     * Purchase first available package from current offerings (subscription preferred).
+     * Requires Activity for Play Billing sheet — set via [setActivityProvider] from MainActivity.
+     */
+    fun purchaseSubscription(onDone: (Result<SubscriptionTier>) -> Unit) {
+        if (AppConfig.revenueCatApiKey.isBlank()) {
+            onDone(Result.failure(Exception("RevenueCat API key not configured")))
+            return
+        }
+        val activity = activityProvider?.invoke()
+        if (activity == null) {
+            onDone(Result.failure(Exception("No activity for purchase sheet")))
+            return
+        }
+        Purchases.sharedInstance.getOfferings(object : ReceiveOfferingsCallback {
+            override fun onReceived(offerings: com.revenuecat.purchases.Offerings) {
+                val pkg: Package? = offerings.current?.availablePackages?.firstOrNull()
+                    ?: offerings.all.values.flatMap { it.availablePackages }.firstOrNull()
+                if (pkg == null) {
+                    onDone(Result.failure(Exception("No packages in RevenueCat offerings")))
+                    return
+                }
+                Purchases.sharedInstance.purchase(
+                    PurchaseParams.Builder(activity, pkg).build(),
+                    object : PurchaseCallback {
+                        override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
+                            val tier = mapTier(customerInfo)
+                            _currentTier.value = tier
+                            onDone(Result.success(tier))
+                        }
+
+                        override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                            if (userCancelled) {
+                                onDone(Result.failure(Exception("Purchase cancelled")))
+                            } else {
+                                onDone(Result.failure(Exception(error.message)))
+                            }
+                        }
+                    },
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                onDone(Result.failure(Exception(error.message)))
+            }
+        })
+    }
+
+    fun openManageSubscriptions() {
+        val intent = Intent(
+            Intent.ACTION_VIEW,
+            Uri.parse("https://play.google.com/store/account/subscriptions"),
+        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        app.startActivity(intent)
     }
 
     private fun mapTier(info: CustomerInfo): SubscriptionTier {
