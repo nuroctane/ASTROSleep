@@ -5,21 +5,21 @@ iOS source of truth: `../AstroSleep-iOS/` · plan: `../documentation/ANDROID_POR
 
 ## Status
 
-**Phases A–C in progress** — engines ported with iOS parity tests (20/20 unit tests green), Room storage, AppViewModel core loop, multi-track AudioService, Auth/Network/RevenueCat shells, Compose onboarding + Tonight/Sounds/Library/Settings UI.
+**Core port + TagEngine v4 + critical bugfixes landed.** See root [README.md](../README.md) and [BUGFIX_SPRINT_NOTES.md](../documentation/BUGFIX_SPRINT_NOTES.md).
 
 | Area | Status |
 |------|--------|
-| TagEngine + lookup tables | ✅ full port |
-| AstrologicalEngine | ✅ full port |
-| ElementVector presets | ✅ full port |
+| TagEngine v4 + ComboComposer | ✅ personalized stacks |
+| AstrologicalEngine | ✅ 13-sign, birth time, moon epoch |
+| ElementVector presets | ✅ |
 | Room + StorageRepository | ✅ |
 | SoundLibrary (manifest) | ✅ |
 | AppViewModel (score, combo, session) | ✅ |
-| AudioService (ExoPlayer layers, LFO, fade, TTS) | ✅ |
-| RevenueCat / Network / Auth shells | ✅ |
-| Compose UI shell | ✅ functional |
-| Background MediaSession polish | ⏳ |
-| Geocoder / full paywall purchase flow | ⏳ |
+| AudioService + PlaybackService FGS | ✅ |
+| RevenueCat / Network / Auth shells | 🟡 |
+| Compose UI (onboarding → tabs) | ✅ |
+| Geocoder / purchase UI | ⏳ |
+| Bundled `.m4a` assets | ⏳ (CDN/manifest) |
 
 ## Open in Android Studio
 
