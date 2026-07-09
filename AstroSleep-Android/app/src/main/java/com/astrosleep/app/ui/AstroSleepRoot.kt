@@ -101,6 +101,10 @@ fun AstroSleepRoot(
                 else -> SettingsScreen(
                     state = state,
                     onRestore = { viewModel.restorePurchases() },
+                    onSignInEmail = { viewModel.linkEmail(it) },
+                    onSignOut = { viewModel.signOutLocal() },
+                    localUserId = state.localUserId,
+                    authStatusMessage = state.authStatusMessage,
                 )
             }
         }

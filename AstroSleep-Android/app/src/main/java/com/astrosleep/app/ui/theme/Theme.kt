@@ -7,23 +7,31 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-// Digital Sea tokens — Building & Projects/DESIGN.md
+// Digital Sea tokens — repo DESIGN.md / emilkowalski/skills
+// Public Sea* colors live in SeaSurfaces.kt; keep scheme locals private-prefixed.
 private val Accent = Color(0xFF5856D6)
 private val Biolume = Color(0xFF5AC8FA)
 private val NightBg = Color(0xFF070B14)
-private val SeaField = Color(0xFF0B1220)
-private val SeaSurface = Color(0xFF121A2B)
+private val Field = Color(0xFF0B1220)
+private val Surface = Color(0xFF121A2B)
+private val OnSea = Color(0xFFE8EEF8)
 
 private val DarkColors = darkColorScheme(
     primary = Accent,
     secondary = Biolume,
+    tertiary = Biolume,
     background = NightBg,
-    surface = SeaSurface,
-    surfaceVariant = SeaField,
+    surface = Surface,
+    surfaceVariant = Field,
+    surfaceContainer = Surface,
+    surfaceContainerHigh = Color(0xFF1A2438),
     onPrimary = Color.White,
-    onBackground = Color(0xFFE8EEF8),
-    onSurface = Color(0xFFE8EEF8),
+    onSecondary = NightBg,
+    onBackground = OnSea,
+    onSurface = OnSea,
+    onSurfaceVariant = Color(0xFF9AA8C0),
     outline = Color(0xFF2A3650),
+    outlineVariant = Color(0x22FFFFFF),
 )
 
 private val LightColors = lightColorScheme(
@@ -36,11 +44,13 @@ private val LightColors = lightColorScheme(
 
 @Composable
 fun AstroSleepTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = true, // sleep product defaults to night
     content: @Composable () -> Unit,
 ) {
+    // Prefer dark Digital Sea always for product feel; allow system light only if explicitly false.
+    val useDark = if (darkTheme) true else isSystemInDarkTheme()
     MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
+        colorScheme = if (useDark) DarkColors else LightColors,
         content = content,
     )
 }

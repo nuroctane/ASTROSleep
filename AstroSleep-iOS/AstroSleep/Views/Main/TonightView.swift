@@ -43,6 +43,7 @@ struct TonightView: View {
                     Spacer(minLength: 40)
                 }
                 .padding(.horizontal, 20)
+                .seaEnter()
             }
             .background(
                 // Digital Sea void — lets Liquid Glass chrome float over content

@@ -1,7 +1,9 @@
 package com.astrosleep.app.service.audio
 
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -83,6 +85,30 @@ class AudioService @Inject constructor(
     private var userPaused = false
     /** Volume before fade; restored after stop so next session is audible. */
     private var volumeBeforeFade: Double = 1.0
+
+    private val transportReceiver = object : BroadcastReceiver() {
+        override fun onReceive(ctx: Context?, intent: Intent?) {
+            when (intent?.action) {
+                PlaybackService.ACTION_PAUSE -> {
+                    if (_isPlaying.value) pause() else resume()
+                }
+                PlaybackService.ACTION_STOP -> stopAll(resetMasterVolume = true)
+            }
+        }
+    }
+
+    init {
+        val filter = IntentFilter().apply {
+            addAction(PlaybackService.ACTION_PAUSE)
+            addAction(PlaybackService.ACTION_STOP)
+        }
+        ContextCompat.registerReceiver(
+            context,
+            transportReceiver,
+            filter,
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+    }
 
     fun loadCombo(combo: Combo) {
         stopAll(resetMasterVolume = false)
@@ -252,6 +278,11 @@ class AudioService @Inject constructor(
     }
 
     fun release() {
+        try {
+            context.unregisterReceiver(transportReceiver)
+        } catch (_: Exception) {
+            // already unregistered
+        }
         stopAll(resetMasterVolume = true)
         tts?.shutdown()
         tts = null

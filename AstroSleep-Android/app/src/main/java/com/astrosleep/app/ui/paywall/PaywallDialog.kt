@@ -1,9 +1,20 @@
-package com.astrosleep.app.ui.paywall
+﻿package com.astrosleep.app.ui.paywall
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import com.astrosleep.app.ui.theme.SeaBiolume
+import com.astrosleep.app.ui.theme.SeaMuted
+import com.astrosleep.app.ui.theme.SeaPrimaryButton
+import com.astrosleep.app.ui.theme.SeaSecondaryButton
+import com.astrosleep.app.ui.theme.SeaText
 
 @Composable
 fun PaywallDialog(
@@ -13,21 +24,45 @@ fun PaywallDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = Color(0xFF121A2B),
+        titleContentColor = SeaText,
+        textContentColor = SeaMuted,
         title = { Text("Unlock AstroSleep") },
         text = {
-            Text(
-                "This feature needs a paid plan ($trigger).\n" +
-                    "Free: 2 layers · Subscription/Pro: up to 7 layers, custom voice, backup.",
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "This feature needs a paid plan ($trigger).",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Text("Free · 2 layers", color = SeaMuted, style = MaterialTheme.typography.bodySmall)
+                Text(
+                    "Subscription / Lifetime · up to 7 layers, custom voice, backup, future features",
+                    color = SeaBiolume,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                Text(
+                    "Purchases via Google Play + RevenueCat when configured. Restore always available.",
+                    color = SeaMuted,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Not now") }
+            SeaPrimaryButton(
+                text = "Not now",
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+            )
         },
         dismissButton = {
-            TextButton(onClick = {
-                onRestore()
-                onDismiss()
-            }) { Text("Restore Purchases") }
+            SeaSecondaryButton(
+                text = "Restore purchases",
+                onClick = {
+                    onRestore()
+                    onDismiss()
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
         },
     )
 }

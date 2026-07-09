@@ -109,11 +109,54 @@ enum AstroDesignSystem {
 
 // MARK: - Press feedback (Apple / Emil craft)
 
+/// Motion tokens — DESIGN.md / emilkowalski/skills
+enum SeaMotion {
+    static let pressDuration: Double = 0.14
+    static let uiDuration: Double = 0.20
+    static let enterDuration: Double = 0.22
+    static let pressScale: CGFloat = 0.97
+    static let enterScale: CGFloat = 0.95
+    /// Strong ease-out (cubic-bezier 0.23, 1, 0.32, 1) approximated
+    static var easeOut: Animation { .timingCurve(0.23, 1, 0.32, 1, duration: pressDuration) }
+    static var easeOutUI: Animation { .timingCurve(0.23, 1, 0.32, 1, duration: uiDuration) }
+}
+
 struct SeaPressButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(.easeOut(duration: 0.14), value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed && !reduceMotion ? SeaMotion.pressScale : 1)
             .opacity(configuration.isPressed ? 0.92 : 1)
+            .animation(reduceMotion ? nil : SeaMotion.easeOut, value: configuration.isPressed)
+    }
+}
+
+/// Soft enter: never from scale(0) — starts at 0.95 + opacity 0.
+struct SeaEnterModifier: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var shown = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(shown || reduceMotion ? 1 : 0)
+            .scaleEffect(shown || reduceMotion ? 1 : SeaMotion.enterScale)
+            .onAppear {
+                if reduceMotion {
+                    shown = true
+                } else {
+                    withAnimation(SeaMotion.easeOutUI) { shown = true }
+                }
+            }
+    }
+}
+
+extension View {
+    func seaEnter() -> some View {
+        modifier(SeaEnterModifier())
+    }
+
+    func seaPressable() -> some View {
+        buttonStyle(SeaPressButtonStyle())
     }
 }

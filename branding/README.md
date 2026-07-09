@@ -3,7 +3,7 @@
 Temporary intuitive mark: **crescent moon + night sky** (indigo on deep navy).  
 Safe to replace later — keep filenames stable where apps reference them.
 
-**Family design system:** see Obsidian `Building & Projects/DESIGN.md` (Digital Sea tokens, accent `#5856D6`, glass recipes). New UI should follow that doc so AstroSleep and future family products share optical identity.
+**Family design system:** see repo root [`DESIGN.md`](../DESIGN.md) (Digital Sea tokens, accent `#5856D6`, glass recipes, Emil/Apple motion). Obsidian `Building & Projects/DESIGN.md` may mirror the same tokens. New UI should follow the repo SoT so AstroSleep and Digital Sea Blackjack share optical identity.
 
 | File | Use |
 |------|-----|

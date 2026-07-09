@@ -360,14 +360,24 @@ python AstroSleep-iOS/Sounds/validate_manifest.py
 
 ## Roadmap
 
+### Done / in progress (this cycle)
+
+- [x] **Digital Sea design system** — root `DESIGN.md`, Compose motion tokens (`SeaMotion`), iOS `SeaPressButtonStyle` + `seaEnter`, Liquid Glass adoption  
+- [x] Android UX pass — glass cards, enter fades, settings auth shell, onboarding timezone field, paywall polish  
+- [x] **MediaStyle lockscreen** notification (Pause / Stop) + MediaSessionCompat shell on Android  
+- [x] Auth shell — encrypted local id + email identity; Supabase-ready hook when keys set  
+- [x] Birth **timezone ID** field on Android onboarding (device default)  
+
+### Still open
+
 - [ ] Ship bundled or reliably cached **audio assets** for offline first-run  
-- [ ] Production **RevenueCat + StoreKit / Play Billing** (remove DEBUG unlocks)  
-- [ ] Full **Supabase** auth UX on Android (email / Google)  
-- [ ] Port **TagEngine v4** personalization to iOS for parity  
-- [ ] Birth **timezone** + geocoder polish  
+- [ ] Production **RevenueCat + StoreKit / Play Billing** product wiring (DEBUG unlocks stay DEBUG-only)  
+- [ ] Full **Supabase** magic-link / Google Sign-In (keys + NetworkService OTP send)  
+- [ ] Port **TagEngine v4** personalization to iOS for parity (Android ships v4; iOS remains v3 until port)  
+- [ ] Geocoder polish (city → lat/lng)  
 - [ ] Bedtime notifications (boot-safe, runtime permissions)  
 - [ ] Swiss Ephemeris (or equivalent) for production-grade positions  
-- [ ] MediaSession deep controls (lockscreen) on Android  
+- [ ] Deeper Media3 `MediaSession` service binding (play/pause wired via broadcast today)  
 
 ---
 

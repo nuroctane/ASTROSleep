@@ -54,6 +54,9 @@ data class AppUiState(
     /** Top ranked sounds for the current user+night (for Sounds tab / debug). */
     val rankedPreview: List<RankedSound> = emptyList(),
     val personalFingerprint: Long? = null,
+    val localUserId: String? = null,
+    val authEmail: String? = null,
+    val authStatusMessage: String? = null,
 )
 
 @HiltViewModel
@@ -76,7 +79,13 @@ class AppViewModel @Inject constructor(
 
     init {
         revenueCat.configureIfNeeded()
-        _ui.update { it.copy(soundCount = soundLibrary.sounds.size) }
+        _ui.update {
+            it.copy(
+                soundCount = soundLibrary.sounds.size,
+                localUserId = authService.currentUserId,
+                authEmail = authService.email.value,
+            )
+        }
         viewModelScope.launch {
             revenueCat.currentTier.collect { tier ->
                 _ui.update { it.copy(currentTier = tier) }
@@ -87,7 +96,30 @@ class AppViewModel @Inject constructor(
                 _ui.update { it.copy(isPlaying = playing) }
             }
         }
+        viewModelScope.launch {
+            authService.userId.collect { id ->
+                _ui.update { it.copy(localUserId = id) }
+            }
+        }
+        viewModelScope.launch {
+            authService.email.collect { email ->
+                _ui.update { it.copy(authEmail = email) }
+            }
+        }
+        viewModelScope.launch {
+            authService.statusMessage.collect { msg ->
+                _ui.update { it.copy(authStatusMessage = msg) }
+            }
+        }
         refreshProfile()
+    }
+
+    fun linkEmail(email: String) {
+        authService.linkEmail(email)
+    }
+
+    fun signOutLocal() {
+        authService.signOutLocal()
     }
 
     fun allSounds(): List<Sound> = soundLibrary.sounds
