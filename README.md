@@ -6,6 +6,8 @@
 
 <p align="center"><strong>Personalized sleep soundscapes driven by your natal chart, tonight’s sky, and a 12-dimensional sound tag engine.</strong></p>
 
+**Aesthetic:** quiet night, not casino. Deep void field, glass surfaces, indigo + biolume accents (Digital Sea). Birth data stays on device. Restrained motion.
+
 AstroSleep is a dual-platform native app (iOS + Android) that:
 
 1. Computes a **sidereal 13-sign natal chart** (Sharatan ayanamsha) from birth data that **never leaves the device**
@@ -19,7 +21,8 @@ AstroSleep is a dual-platform native app (iOS + Android) that:
 | **iOS** | SwiftUI · MVVM · AVFoundation · Core Data · **Liquid Glass (iOS 26)** | [`AstroSleep-iOS/`](AstroSleep-iOS/) |
 | **Android** | Kotlin · Jetpack Compose · Media3 · Room · Hilt | [`AstroSleep-Android/`](AstroSleep-Android/) |
 
-**Repo:** [github.com/nuroctane/ASTROSleep](https://github.com/nuroctane/ASTROSleep)
+**Repo:** [github.com/nuroctane/ASTROSleep](https://github.com/nuroctane/ASTROSleep)  
+**Brand:** Constellation Field mark — see [`branding/`](branding/) · design tokens [`.agents/DESIGN.md`](.agents/DESIGN.md)
 
 ---
 
@@ -69,10 +72,11 @@ Playback (multi-track ambient + optional TTS affirmation)
 | **Natal chart** | Sidereal 13-sign zodiac (includes Ophiuchus), Sharatan ayanamsha, equal-house when birth time known |
 | **Nightly score** | Moon phase + transit aspects → elemental blend for *tonight* |
 | **Tag engine** | 12 dimensions (domain, rhythm, register, context, weight, texture, motion, density, temperature, polarity, celestial, archetype) |
-| **Personalized stacks (Android v4)** | Per-user fingerprint, natal/transit/phase affinities, role-based layer seats (bedrock → spark) |
+| **Personalized stacks (v4)** | Per-user fingerprint, natal/transit/phase affinities, role-based layer seats (bedrock → spark) on **iOS + Android** |
 | **Multi-layer audio** | Per-layer volume, speed, EQ, LFO oscillation, sleep-timer fade |
 | **Affirmations** | Cached daily scripts via HTTPS proxy; on-device TTS |
-| **Library** | Saved combos / session history (platform-dependent completeness) |
+| **Library** | Saved combos / session history |
+| **Cosmic Systems** | Interactive 3D sky (shared Three.js assets) — see docs |
 | **Subscriptions** | Free / Subscription / Lifetime (RevenueCat — production wiring in progress) |
 
 ### Design principles
@@ -81,6 +85,7 @@ Playback (multi-track ambient + optional TTS affirmation)
 - **Secrets out of source** — xcconfig / `local.properties` / CI only
 - **HTTPS only** in production network paths
 - **Deterministic chart math** — no randomness in rulerships or scoring seeds (user fingerprint is hash-stable)
+- **Digital Sea optical identity** — void navy, glass, accent `#5856D6`, biolume `#5AC8FA`; no neon chrome
 
 ---
 
@@ -89,31 +94,30 @@ Playback (multi-track ambient + optional TTS affirmation)
 ```
 ASTROSleep/
 ├── README.md                          ← you are here
-├── branding/                          # Logo master assets (temporary brand mark)
+├── branding/                          # Constellation Field logo masters
 │   ├── astrosleep-logo.png            # 1024 master
 │   └── README.md
+├── .agents/
+│   └── DESIGN.md                      # Digital Sea design system (agent SoT)
 ├── .gitignore
 ├── AstroSleep-iOS/                    # Native iOS app
 │   ├── AstroSleep/                    # Swift sources, Core Data, entitlements
-│   │   └── Resources/Assets.xcassets  # AppIcon + Logo imageset
+│   │   └── Resources/
+│   │       ├── Assets.xcassets        # AppIcon + Logo imageset
+│   │       └── cosmic-systems/        # Bundled 3D sky (iOS target)
 │   └── Sounds/                        # sounds_manifest.json + validate_manifest.py
 ├── AstroSleep-Android/                # Native Android app
 │   ├── app/                           # Gradle module (Compose UI, engines, services)
-│   │   └── src/main/res/mipmap-*      # Launcher icons
-│   ├── gradle/                        # Wrapper
-│   └── README.md                      # Android-specific setup
-├── documentation/                     # Specs, guides, changelogs, port plan
-│   ├── AstroSleep-iOS_README.md
-│   ├── TAG_ENGINE_GUIDE.md
-│   ├── TAG_ENGINE_ANDROID_V4.md
-│   ├── ANDROID_PORT_PLAN.md
-│   ├── BUGFIX_SPRINT_NOTES.md
-│   ├── CHANGELOG.md
-│   ├── Sounds_README.md
-│   └── iOS_GO_LIVE_CHECKLIST.md
+│   │   └── src/main/
+│   │       ├── res/                   # Launcher icons + logo drawable
+│   │       └── assets/cosmic-systems/ # Bundled 3D sky
+│   ├── gradle/
+│   └── README.md
+├── shared/
+│   └── cosmic-systems/                # Source Three.js sky (copy into platforms)
+├── documentation/                     # Specs, guides, checklists
 ├── testing/
 │   └── astrosleep-preview/            # HTML preview / experimental UI
-└── Bugs/                              # Scratch / triage (optional)
 ```
 
 ---
@@ -131,7 +135,7 @@ ASTROSleep/
 
 ### Tag engine (12 dimensions)
 
-Every sound is tagged on axes such as **domain** (water/fire/…), **celestial** (lunar/solar/…), **archetype** (mother/hero/…), etc. Weighted lookup tables map tags → elemental vectors. Nightly (and on Android, natal + transit + fingerprint) scores rank the catalog.
+Every sound is tagged on axes such as **domain** (water/fire/…), **celestial** (lunar/solar/…), **archetype** (mother/hero/…), etc. Weighted lookup tables map tags → elemental vectors. Nightly (and natal + transit + fingerprint) scores rank the catalog.
 
 | Weight | Dimensions |
 |--------|------------|
@@ -153,12 +157,12 @@ Every sound is tagged on axes such as **domain** (water/fire/…), **celestial**
 | Area | iOS | Android |
 |------|-----|---------|
 | Onboarding + local profile | ✅ | ✅ |
-| Natal + nightly engines | ✅ (post-bugfix) | ✅ (post-bugfix) |
+| Natal + nightly engines | ✅ | ✅ |
 | Tag ranking | ✅ **v4** personalization | ✅ **v4** personalization |
 | Multi-track playback + loop | ✅ | ✅ (ExoPlayer repeat) |
-| Sleep timer fade | ✅ | ✅ (volume restore fixed) |
+| Sleep timer fade | ✅ | ✅ |
 | Background audio | ✅ (AV session) | ✅ FGS shell (`PlaybackService`) |
-| TTS affirmations | ✅ wired | ✅ wired |
+| TTS affirmations | ✅ | ✅ |
 | AI affirmation network | ✅ | ✅ |
 | Auth (Supabase) | ✅ (+ Apple Sign-In path) | 🟡 local anonymous shell (email identity) |
 | RevenueCat production | 🟡 DEBUG stub gated | 🟡 SDK shell |
@@ -167,6 +171,7 @@ Every sound is tagged on axes such as **domain** (water/fire/…), **celestial**
 | Library / saved combos | ✅ | ✅ Room UX |
 | Bedtime notifications | ✅ | ✅ + boot reschedule |
 | Geocoding | ✅ | ✅ |
+| Cosmic Systems 3D tab | ✅ (WebView + shared assets) | ✅ (WebView + shared assets) |
 | Unit tests | Limited (Swift / no Xcodeproj in repo) | ✅ engines + personalization + fingerprint golden |
 
 Detailed recent fixes: [`documentation/BUGFIX_SPRINT_NOTES.md`](documentation/BUGFIX_SPRINT_NOTES.md)
@@ -223,6 +228,7 @@ More detail: [`AstroSleep-Android/README.md`](AstroSleep-Android/README.md)
 4. SPM packages (as needed): RevenueCat, Supabase, PostHog, Sentry  
 5. Capabilities: **Background Audio**, Push, Sign in with Apple, Associated Domains  
 6. Inject secrets via xcconfig / User-Defined Build Settings  
+7. Bundle `cosmic-systems` assets (see [`documentation/XCODE_COSMIC_BUNDLE.md`](documentation/XCODE_COSMIC_BUNDLE.md))
 
 Full setup, App Store checklist, and security list:
 
@@ -349,15 +355,23 @@ python AstroSleep-iOS/Sounds/validate_manifest.py
 
 | Doc | Description |
 |-----|-------------|
+| [`.agents/DESIGN.md`](.agents/DESIGN.md) | Digital Sea design system (colors, glass, motion) |
+| [`branding/README.md`](branding/README.md) | Logo assets + app wiring |
 | [AstroSleep-iOS_README.md](documentation/AstroSleep-iOS_README.md) | iOS architecture, setup, security checklist |
 | [ANDROID_PORT_PLAN.md](documentation/ANDROID_PORT_PLAN.md) | Android port phases & stack map |
-| [TAG_ENGINE_GUIDE.md](documentation/TAG_ENGINE_GUIDE.md) | Plain-English tag engine (v3) |
+| [TAG_ENGINE_GUIDE.md](documentation/TAG_ENGINE_GUIDE.md) | Plain-English tag engine |
 | [TAG_ENGINE_ANDROID_V4.md](documentation/TAG_ENGINE_ANDROID_V4.md) | Android personalization & combo stacking |
+| [TAG_ENGINE_IOS_V4_PORT.md](documentation/TAG_ENGINE_IOS_V4_PORT.md) | iOS v4 parity notes |
 | [Sounds_README.md](documentation/Sounds_README.md) | Manifest format & tag vocabulary |
-| [CHANGELOG.md](documentation/CHANGELOG.md) | Version history (iOS-focused log) |
-| [BUGFIX_SPRINT_NOTES.md](documentation/BUGFIX_SPRINT_NOTES.md) | Critical fix sprint notes |
-| [iOS_GO_LIVE_CHECKLIST.md](documentation/iOS_GO_LIVE_CHECKLIST.md) | Shipping checklist |
+| [COSMIC_SYSTEMS_3D_TAB.md](documentation/COSMIC_SYSTEMS_3D_TAB.md) | 3D Cosmic Systems product tab |
+| [XCODE_COSMIC_BUNDLE.md](documentation/XCODE_COSMIC_BUNDLE.md) | iOS Xcode bundle steps for cosmic assets |
+| [UI_DEEP_DIVE.md](documentation/UI_DEEP_DIVE.md) | UI structure deep dive |
 | [IOS_LIQUID_GLASS.md](documentation/IOS_LIQUID_GLASS.md) | iOS 26 Liquid Glass adoption |
+| [CHANGELOG.md](documentation/CHANGELOG.md) | Version history |
+| [BUGFIX_SPRINT_NOTES.md](documentation/BUGFIX_SPRINT_NOTES.md) | Critical fix sprint notes |
+| [BUG_REVIEW.md](documentation/BUG_REVIEW.md) | Bug review notes |
+| [iOS_GO_LIVE_CHECKLIST.md](documentation/iOS_GO_LIVE_CHECKLIST.md) | Shipping checklist |
+| [`shared/cosmic-systems/README.md`](shared/cosmic-systems/README.md) | Shared Three.js sky copy recipe |
 
 ---
 
@@ -366,6 +380,7 @@ python AstroSleep-iOS/Sounds/validate_manifest.py
 ### Done / in progress (this cycle)
 
 - [x] **Digital Sea design system** — `.agents/DESIGN.md`, Compose motion tokens (`SeaMotion`), iOS `SeaPressButtonStyle` + `seaEnter`, Liquid Glass adoption  
+- [x] **Constellation Field** brand mark (logo ladder + native app icons)  
 - [x] Android UX pass — glass cards, enter fades, settings auth shell, onboarding timezone field, paywall polish  
 - [x] **MediaStyle lockscreen** notification (Pause / Stop) + MediaSessionCompat shell on Android  
 - [x] Auth shell — encrypted local id + email identity; Supabase-ready hook when keys set  
@@ -373,16 +388,15 @@ python AstroSleep-iOS/Sounds/validate_manifest.py
 - [x] Audio focus: transient vs user pause; notification sync; MediaSession callbacks  
 - [x] Affirmation pipeline wired on Android Begin + `user_id` API parity  
 - [x] Full UTC JD for nightly/transit sky (Android + iOS)  
-- [x] iOS auth refresh re-applies `currentUserId`  
-- [x] Android RC purchase path + Play manage deep-link; optional birth-time toggle  
+- [x] Cosmic Systems shared assets + platform WebViews  
 
-### Still open (secrets / stores / device — your side)
+### Still open (secrets / stores / device)
 
 - [ ] Ship real **audio binaries** (or live CDN files) for offline first-run demos  
 - [ ] Production **StoreKit / Play Billing** + RevenueCat product mapping with real keys  
 - [ ] Full **Supabase** magic-link / Google Sign-In (project keys)  
 - [ ] Swiss Ephemeris (or equivalent) for production-grade positions  
-- [ ] Cosmic body tour / tonight overlay / personal markers  
+- [ ] Cosmic body tour polish / tonight overlay / personal markers  
 - [ ] Device / TestFlight / Play internal testing + store submission  
 
 ### Completed recently
@@ -393,15 +407,15 @@ python AstroSleep-iOS/Sounds/validate_manifest.py
 - [x] Bedtime notifications + boot reschedule (Android)  
 - [x] Fingerprint golden tests · guest affirmation user_id fix  
 
-
 ---
 
 ## Contributing / development notes
 
-- Prefer small commits per concern (engines · audio · auth · UI)  
+- Prefer small commits per concern (engines · audio · auth · UI · branding)  
 - Keep engine golden tests green when changing sign/moon math  
 - Do not commit `local.properties`, keystores, xcconfig secrets, or large binary dumps without agreement  
 - Dual-platform changes to shared math should update **both** `AstrologicalEngine` **and** Tag Engine v4 stacks (`PersonalSoundProfile` / `TagEngine` / `ComboComposer`) — never leave iOS and Android engines out of sync  
+- UI and marks follow [`.agents/DESIGN.md`](.agents/DESIGN.md); do not invent a second palette mid-PR  
 
 ---
 

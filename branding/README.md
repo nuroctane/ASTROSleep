@@ -1,22 +1,25 @@
 # AstroSleep branding
 
-Temporary intuitive mark: **crescent moon + night sky** (indigo on deep navy).  
-Safe to replace later — keep filenames stable where apps reference them.
+**Mark:** Constellation Field — linked star nodes forming a soft crescent silhouette on Digital Sea void navy. No solid moon mass. Biolume (`#5AC8FA`) on a few nodes; lines in indigo family (`#5856D6`).
 
-**Family design system:** see [`.agents/DESIGN.md`](../.agents/DESIGN.md) (Digital Sea tokens, accent `#5856D6`, glass recipes, Emil/Apple motion). Obsidian `Building & Projects/DESIGN.md` may mirror the same tokens. New UI should follow the repo SoT so AstroSleep and Digital Sea Blackjack share optical identity.
+**Design system:** [`.agents/DESIGN.md`](../.agents/DESIGN.md) (Digital Sea tokens, glass, motion). Keep optical association with the wider family (quiet night, not neon SaaS).
 
-| File | Use |
-|------|-----|
-| `astrosleep-logo.png` | Master 1024×1024 |
-| `astrosleep-logo-512.png` | Medium |
-| `astrosleep-logo-256.png` | Small / favicon-ish |
-| `astrosleep-logo-128.png` | Tiny |
-| `astrosleep-logo-readme.png` | GitHub README |
+| File | Size | Use |
+|------|------|-----|
+| `astrosleep-logo.png` | 1024×1024 | Master |
+| `astrosleep-logo-512.png` | 512×512 | Medium / store |
+| `astrosleep-logo-256.png` | 256×256 | Small |
+| `astrosleep-logo-128.png` | 128×128 | Tiny |
+| `astrosleep-logo-readme.png` | 512×512 | GitHub README hero |
 
 **App wiring**
 
-- Android launcher: `AstroSleep-Android/app/src/main/res/mipmap-*/ic_launcher*.png`
-- Android adaptive FG: `.../drawable/ic_launcher_foreground.png`
-- Android in-app: `@drawable/logo_astrosleep`
-- iOS App Icon: `AstroSleep-iOS/.../AppIcon.appiconset/`
-- iOS in-app: `Image("Logo")` → `Logo.imageset`
+| Surface | Path |
+|---------|------|
+| Android launcher | `AstroSleep-Android/app/src/main/res/mipmap-*/ic_launcher*.png` |
+| Android adaptive FG | `.../drawable/ic_launcher_foreground.png` |
+| Android in-app | `@drawable/logo_astrosleep` |
+| iOS App Icon | `AstroSleep-iOS/.../AppIcon.appiconset/` |
+| iOS in-app | `Image("Logo")` → `Logo.imageset` |
+
+When regenerating, keep **filenames stable** so README and native assets do not break.

@@ -9,6 +9,8 @@
 **Quiet night, not casino.** Deep void field, glass surfaces, biolume accents, restrained motion.
 Sleep UX prioritizes calm feedback over spectacle. Every press should feel heard; nothing should thrash.
 
+**Brand mark:** Constellation Field (linked nodes forming a crescent silhouette — no solid moon). Masters under `branding/astrosleep-logo*.png`.
+
 ## Color tokens
 
 | Token | Value | Role |
