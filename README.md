@@ -1,7 +1,7 @@
 # AstroSleep
 
 <p align="center">
-  <img src="branding/astrosleep-logo-readme.png" alt="AstroSleep logo" width="160" height="160" />
+  <img src="branding/astrosleep-constellation.png" alt="AstroSleep logo" width="160" height="160" />
 </p>
 
 <p align="center"><strong>Personalized sleep soundscapes driven by your natal chart, tonight’s sky, and a 12-dimensional sound tag engine.</strong></p>

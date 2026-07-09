@@ -10,7 +10,7 @@
 | `astrosleep-logo-512.png` | 512×512 | Medium / store |
 | `astrosleep-logo-256.png` | 256×256 | Small |
 | `astrosleep-logo-128.png` | 128×128 | Tiny |
-| `astrosleep-logo-readme.png` | 512×512 | GitHub README hero |
+| `astrosleep-constellation.png (README) / astrosleep-logo-readme.png` | 512×512 | GitHub README hero |
 
 **App wiring**
 
