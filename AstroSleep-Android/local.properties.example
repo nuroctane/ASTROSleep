@@ -1,0 +1,10 @@
+## Copy to local.properties (gitignored) and fill in.
+## Android Studio also writes sdk.dir here automatically.
+
+sdk.dir=C\:\\Users\\YOU\\AppData\\Local\\Android\\Sdk
+
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=
+REVENUECAT_API_KEY=
+# PROXY_BASE_URL=https://api.astrosleep.app/api
+# SOUND_MANIFEST_URL=https://cdn.astrosleep.app/sounds_manifest.json

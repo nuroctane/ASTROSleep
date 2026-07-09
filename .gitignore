@@ -1,0 +1,54 @@
+# Android
+*.iml
+.gradle/
+**/build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
+.idea/
+*.hprof
+.DS_Store
+
+# Keys / secrets
+*.jks
+*.keystore
+*.xcconfig
+secrets.properties
+**/google-services.json
+
+# iOS / Xcode
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+Pods/
+.swiftpm/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Editors / OS
+.vscode/
+*.swp
+Thumbs.db
+desktop.ini
