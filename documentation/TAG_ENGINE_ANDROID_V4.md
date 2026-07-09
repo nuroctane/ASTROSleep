@@ -1,6 +1,8 @@
-# Tag Engine v4 (Android) — Personalized Sonic Fingerprints
+# Tag Engine v4 — Personalized Sonic Fingerprints (Android + iOS)
 
 > Goal: every sign-in / natal chart produces a **vastly different** ranking and layer stack from the same sound catalog. Sound **assets** are unchanged; the math is what diverges.
+
+> **Parity (2026-07-09):** iOS ships the same architecture (`PersonalSoundProfile`, `TagAffinityTables`, `TagEngine`, `ComboComposer`). **Any change to this math must land on both platforms in the same change set.**
 
 ## Why v3 wasn't enough
 

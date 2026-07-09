@@ -52,6 +52,13 @@ fun AstroSleepRoot(
         OnboardingScreen(
             isLoading = state.isLoading,
             errorMessage = state.errorMessage,
+            onGeocodeCity = { city, onResult, onDone ->
+                viewModel.geocodeCityPreview(
+                    city = city,
+                    onResult = { lat, lng, name -> onResult(lat, lng, name) },
+                    onDone = onDone,
+                )
+            },
             onComplete = { name, birthMs, timeMs, lat, lng, city ->
                 viewModel.completeOnboarding(name, birthMs, timeMs, lat, lng, city)
             },
@@ -97,13 +104,15 @@ fun AstroSleepRoot(
                 )
                 1 -> CosmicSystemsScreen()
                 2 -> SoundsScreen(viewModel = viewModel)
-                3 -> LibraryScreen()
+                3 -> LibraryScreen(viewModel = viewModel)
                 else -> SettingsScreen(
                     state = state,
                     onRestore = { viewModel.restorePurchases() },
                     onSignInEmail = { viewModel.linkEmail(it) },
                     onSignOut = { viewModel.signOutLocal() },
                     onManageSubscription = { viewModel.openPlaySubscriptions() },
+                    onBedtimeToggle = { enabled -> viewModel.setBedtimeReminder(enabled) },
+                    onTransitLocationToggle = { viewModel.updateTransitLocationToggle(it) },
                     localUserId = state.localUserId,
                     authStatusMessage = state.authStatusMessage,
                 )

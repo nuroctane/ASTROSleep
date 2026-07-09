@@ -18,6 +18,9 @@ final class AppState: ObservableObject {
     @Published var cachedAffirmation: String?
     @Published var showPaywall: Bool = false
     @Published var paywallTrigger: String = ""
+    /// Tag Engine v4 personal fingerprint (stable per user + chart). Quiet UI / debug.
+    @Published var personalFingerprint: Int64?
+    @Published var rankedPreview: [RankedSound] = []
     
     private var lastNightlyScoreDate: Date?
     private var cancellables = Set<AnyCancellable>()
@@ -188,6 +191,7 @@ final class AppState: ObservableObject {
     
     // MARK: - Combo Generation
     
+    /// Auto combo via Tag Engine v4 + ComboComposer (parity with Android).
     func autoGenerateCombo(intention: String, tier: SubscriptionTier) -> Combo {
         computeNightlyScore()
         
@@ -195,43 +199,45 @@ final class AppState: ObservableObject {
             return createDefaultCombo(intention: intention, tier: tier)
         }
         
-        let sounds = SoundLibrary.shared.sounds
-        let ranked = TagEngine.shared.rankSounds(sounds, against: score)
-        let maxLayers = tier.maxLayers
-        let topRanked = Array(ranked.prefix(maxLayers))
+        let userId = AuthService.shared.currentUserId
+            ?? profile?.id
+            ?? UUID().uuidString
+        let baseScore = profile?.baseScore ?? score.elementScore
+        let chart = profile?.natalChart
         
-        // O(n) total score — no inner loop lookup
-        let totalScore = topRanked.reduce(0.0) { $0 + $1.score }
-        
-        let layers = topRanked.enumerated().map { index, rankedSound -> AmbientLayer in
-            let volume = totalScore > 0 ? (rankedSound.score / totalScore) * 0.75 : 0.15
-            
-            let oscillation = buildOscillation(
-                for: rankedSound.sound,
-                index: index,
-                dominantElement: score.dominantElement,
-                tier: tier
-            )
-            
-            return AmbientLayer(
-                soundId: rankedSound.sound.id,
-                volume: volume.roundedTo(2),
-                playbackSpeed: 1.0,
-                eq: EQProfile.profile(forRegister: rankedSound.sound.tags.register),
-                oscillation: oscillation
-            )
-        }
-        
-        return Combo(
-            id: UUID().uuidString,
-            name: "\(score.moonPhase.displayName) Session",
-            createdAt: Date(),
-            source: .auto,
-            chartSnapshot: score.toSnapshot(),
-            layers: layers,
-            affirmationLayer: AffirmationLayer.default(voiceId: profile?.selectedVoiceId ?? "female"),
-            isReadOnly: false
+        let result = ComboComposer.shared.compose(
+            userId: userId,
+            sounds: SoundLibrary.shared.sounds,
+            nightly: score,
+            natalBaseScore: baseScore,
+            chart: chart,
+            tier: tier,
+            voiceId: profile?.selectedVoiceId ?? "female"
         )
+        
+        personalFingerprint = result.profile.fingerprint
+        rankedPreview = Array(result.ranked.prefix(12))
+        activeCombo = result.combo
+        return result.combo
+    }
+    
+    /// Recompute ranked preview without building a full combo (Sounds tab / debug).
+    func refreshRankedPreview() {
+        guard let profile = profile, let score = currentNightlyScore else { return }
+        let personal = PersonalSoundProfile.from(
+            userId: profile.id,
+            chart: profile.natalChart,
+            baseScore: profile.baseScore
+        )
+        let ranked = TagEngine.shared.rankSoundsPersonalized(
+            sounds: SoundLibrary.shared.sounds,
+            nightly: score,
+            profile: personal,
+            natalBaseScore: profile.baseScore,
+            chart: profile.natalChart
+        )
+        personalFingerprint = personal.fingerprint
+        rankedPreview = Array(ranked.prefix(12))
     }
     
     private func createDefaultCombo(intention: String, tier: SubscriptionTier) -> Combo {
@@ -259,41 +265,6 @@ final class AppState: ObservableObject {
             affirmationLayer: .default(),
             isReadOnly: false
         )
-    }
-    
-    private func buildOscillation(for sound: Sound, index: Int, dominantElement: Element, tier: SubscriptionTier) -> OscillationConfig? {
-        
-        switch dominantElement {
-        case .water:
-            return OscillationConfig(
-                enabled: index == 0,
-                waveform: .sine,
-                periodSeconds: 45.0,
-                minVolume: 0.45,
-                maxVolume: 0.85,
-                phaseOffset: Double(index) * 0.33
-            )
-        case .air:
-            return OscillationConfig(
-                enabled: index <= 1,
-                waveform: .perlin,
-                periodSeconds: 18.0,
-                minVolume: 0.40,
-                maxVolume: 0.80,
-                phaseOffset: Double(index) * 0.33
-            )
-        case .fire:
-            return OscillationConfig(
-                enabled: index == 0,
-                waveform: .perlin,
-                periodSeconds: 12.0,
-                minVolume: 0.35,
-                maxVolume: 0.75,
-                phaseOffset: Double(index) * 0.33
-            )
-        case .earth:
-            return nil
-        }
     }
     
     // MARK: - Tier Enforcement

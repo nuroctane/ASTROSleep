@@ -10,6 +10,7 @@ enum Element: String, CaseIterable, Codable, Identifiable {
     case water = "Water"
     
     var id: String { rawValue }
+    var displayName: String { rawValue }
     
     var index: Int {
         switch self {
@@ -67,6 +68,7 @@ enum Sign: String, CaseIterable, Codable, Identifiable {
     case pisces = "Pisces"
     
     var id: String { rawValue }
+    var displayName: String { rawValue }
     
     var element: Element {
         switch self {

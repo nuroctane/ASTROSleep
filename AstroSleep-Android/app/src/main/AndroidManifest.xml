@@ -8,6 +8,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <application
         android:name=".AstroSleepApp"
@@ -31,10 +34,24 @@
             </intent-filter>
         </activity>
 
-        <!-- Media playback foreground service (wired in Phase B/C) -->
+        <!-- Media playback foreground service -->
         <service
             android:name=".service.audio.PlaybackService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
+
+        <receiver
+            android:name=".service.BedtimeAlarmReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".service.BootReceiver"
+            android:exported="true"
+            android:directBootAware="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

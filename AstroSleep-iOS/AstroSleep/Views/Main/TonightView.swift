@@ -77,6 +77,14 @@ struct TonightView: View {
             }
             .onAppear {
                 computeNightlyData()
+                if appState.activeCombo == nil {
+                    generatedCombo = appState.autoGenerateCombo(
+                        intention: intention.isEmpty ? "Sleep well" : intention,
+                        tier: revenueCat.currentTier
+                    )
+                } else {
+                    appState.refreshRankedPreview()
+                }
             }
         }
     }
@@ -121,6 +129,12 @@ struct TonightView: View {
             }
             
             Spacer()
+
+            if let fp = appState.personalFingerprint {
+                Text("fp \(String(format: "%08llx", UInt64(bitPattern: fp)).prefix(8))")
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundColor(.secondary)
+            }
         }
         .padding()
         .astroContentCard(cornerRadius: 16)

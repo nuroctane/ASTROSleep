@@ -65,6 +65,12 @@ struct SoundTags: Codable, Equatable {
     let polarity: String      // active, receptive, balanced, neutral
     let celestial: String     // solar, lunar, stellar, planetary, void
     let archetype: String     // maiden, mother, crone, hero, mentor, shadow, trickster
+
+    /// All twelve tag strings for affinity / transit / phase matching (parity with Android).
+    func allValues() -> [String] {
+        [domain, rhythm, register, context, weight, texture,
+         motion, density, temperature, polarity, celestial, archetype]
+    }
     
     func validate() -> Bool {
         let validDomains = ["water", "air", "fire", "earth", "mechanical", "organic", "electrical", "cosmic"]
@@ -95,17 +101,32 @@ struct SoundTags: Codable, Equatable {
     }
 }
 
-// MARK: - Ranked Sound
+// MARK: - Ranked Sound (v4 — score anatomy for stacking / UI)
 
 struct RankedSound: Identifiable, Comparable {
-    let id = UUID()
+    var id: String { sound.id }
     let sound: Sound
     let score: Double
     let matchPercentage: Double
-    
+    var breakdown: ScoreBreakdown = ScoreBreakdown()
+    var suggestedRole: StackRole? = nil
+
     static func < (lhs: RankedSound, rhs: RankedSound) -> Bool {
         lhs.score < rhs.score
     }
+}
+
+/// Why a sound scored for this user + night (parity with Android ScoreBreakdown).
+struct ScoreBreakdown: Equatable {
+    var nightlyResonance: Double = 0
+    var natalResonance: Double = 0
+    var tagAffinity: Double = 0
+    var transitResonance: Double = 0
+    var moonPhaseAffinity: Double = 0
+    var personalizedVectorPull: Double = 0
+    var fingerprintJitter: Double = 0
+    var contrastBonus: Double = 0
+    var notes: [String] = []
 }
 
 // MARK: - Sound Manifest

@@ -7,6 +7,7 @@ import android.content.IntentFilter
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
+import android.media.audiofx.Equalizer
 import android.os.Build
 import android.speech.tts.TextToSpeech
 import androidx.core.content.ContextCompat
@@ -22,6 +23,7 @@ import com.astrosleep.app.core.model.EQProfile
 import com.astrosleep.app.core.model.OscillationConfig
 import com.astrosleep.app.core.model.SoundLibrary
 import com.astrosleep.app.core.model.Waveform
+import com.astrosleep.app.service.SoundCacheService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +35,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Locale
 import java.util.UUID
@@ -44,13 +47,13 @@ import kotlin.math.sin
 
 /**
  * Multi-track ambient playback via Media3 ExoPlayer.
- * Fixes: master-volume restore after fade, FGS lifecycle, speed/LFO waveforms,
- * empty-load error state.
+ * Per-layer EQ (system Equalizer), LFO, sleep-timer fade, FGS lifecycle, CDN cache.
  */
 @Singleton
 class AudioService @Inject constructor(
     @ApplicationContext private val context: Context,
     private val soundLibrary: SoundLibrary,
+    private val soundCache: SoundCacheService,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -72,12 +75,14 @@ class AudioService @Inject constructor(
         val player: ExoPlayer,
         val baseVolume: Float,
         val oscillation: OscillationConfig?,
+        val equalizer: Equalizer?,
     )
 
     private val layers = mutableMapOf<String, LayerPlayer>()
     private var lfoJob: Job? = null
     private var sleepTimerJob: Job? = null
     private var fadeJob: Job? = null
+    private var loadJob: Job? = null
     private var tts: TextToSpeech? = null
     private var ttsReady = false
     private var pendingSpeech: Pair<String, Float>? = null
@@ -113,7 +118,12 @@ class AudioService @Inject constructor(
         )
     }
 
-    fun loadCombo(combo: Combo) {
+    /**
+     * Load combo layers (blocking until complete on Main).
+     * Resolves bundle → cache → CDN, applies per-layer EQ.
+     */
+    suspend fun loadCombo(combo: Combo) {
+        loadJob?.cancel()
         stopAll(resetMasterVolume = false)
         _errorMessage.value = null
         _state.value = AudioState.LOADING
@@ -124,7 +134,9 @@ class AudioService @Inject constructor(
 
         var loaded = 0
         for (layer in combo.layers) {
-            val url = resolveSoundUri(layer.soundId) ?: continue
+            val url = resolveSoundUri(layer.soundId)
+                ?: withContext(Dispatchers.IO) { soundCache.ensureCached(layer.soundId) }
+                ?: continue
             val player = ExoPlayer.Builder(context).build().apply {
                 setAudioAttributes(
                     Media3AudioAttributes.Builder()
@@ -139,11 +151,14 @@ class AudioService @Inject constructor(
                 volume = (layer.volume * _masterVolume.value).toFloat()
                 prepare()
             }
+            // Attach EQ after prepare so audioSessionId is valid
+            val eq = attachEqualizer(player, layer.eq)
             layers[layer.id] = LayerPlayer(
                 layerId = layer.id,
                 player = player,
                 baseVolume = layer.volume.toFloat(),
                 oscillation = layer.oscillation,
+                equalizer = eq,
             )
             loaded++
         }
@@ -154,6 +169,57 @@ class AudioService @Inject constructor(
         } else {
             _state.value = AudioState.IDLE
         }
+    }
+
+    /**
+     * Map EQProfile (0..1 bass/mid/treble) onto system Equalizer bands.
+     * Mirrors iOS AVAudioUnitEQ 3-band tilt: (level - 0.5) * 24 dB style gain.
+     */
+    private fun attachEqualizer(player: ExoPlayer, profile: EQProfile): Equalizer? {
+        return try {
+            val sessionId = player.audioSessionId
+            if (sessionId == C.AUDIO_SESSION_ID_UNSET || sessionId == 0) return null
+            Equalizer(0, sessionId).apply {
+                enabled = true
+                applyEqProfile(this, profile)
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun applyEqProfile(eq: Equalizer, profile: EQProfile) {
+        val n = eq.numberOfBands.toInt()
+        if (n <= 0) return
+        val range = eq.bandLevelRange
+        val minLevel = range[0].toInt()
+        val maxLevel = range[1].toInt()
+        // millibels: map 0..1 profile → min..max with 0.5 = flat
+        fun levelFor(value: Double): Short {
+            val t = ((value - 0.5) * 2.0).coerceIn(-1.0, 1.0)
+            val mid = (minLevel + maxLevel) / 2
+            val span = (maxLevel - minLevel) / 2
+            return (mid + t * span).toInt().coerceIn(minLevel, maxLevel).toShort()
+        }
+        // Distribute bands into bass / mid / treble groups by center frequency
+        for (i in 0 until n) {
+            val band = i.toShort()
+            val freqHz = eq.getCenterFreq(band) / 1000 // millihertz → Hz
+            val gain = when {
+                freqHz < 400 -> levelFor(profile.bass)
+                freqHz < 2500 -> levelFor(profile.mid)
+                else -> levelFor(profile.treble)
+            }
+            try {
+                eq.setBandLevel(band, gain)
+            } catch (_: Exception) {
+                // device may reject extreme levels
+            }
+        }
+    }
+
+    fun updateLayerEq(layerId: String, profile: EQProfile) {
+        layers[layerId]?.equalizer?.let { applyEqProfile(it, profile) }
     }
 
     fun play(sleepTimerMinutes: Int? = null) {
@@ -221,7 +287,13 @@ class AudioService @Inject constructor(
         sleepTimerJob?.cancel()
         fadeJob?.cancel()
         lfoJob?.cancel()
+        loadJob?.cancel()
         layers.values.forEach {
+            try {
+                it.equalizer?.enabled = false
+                it.equalizer?.release()
+            } catch (_: Exception) {
+            }
             it.player.stop()
             it.player.release()
         }

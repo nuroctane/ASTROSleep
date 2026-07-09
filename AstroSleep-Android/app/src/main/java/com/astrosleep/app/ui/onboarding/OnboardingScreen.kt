@@ -35,6 +35,7 @@ import com.astrosleep.app.ui.theme.SeaFaint
 import com.astrosleep.app.ui.theme.SeaGlassCard
 import com.astrosleep.app.ui.theme.SeaMuted
 import com.astrosleep.app.ui.theme.SeaPrimaryButton
+import com.astrosleep.app.ui.theme.SeaSecondaryButton
 import com.astrosleep.app.ui.theme.SeaText
 import com.astrosleep.app.ui.theme.SeaVoid
 import com.astrosleep.app.ui.theme.rememberSeaEnterProgress
@@ -46,6 +47,11 @@ import java.util.TimeZone
 fun OnboardingScreen(
     isLoading: Boolean,
     errorMessage: String?,
+    onGeocodeCity: (
+        city: String,
+        onResult: (lat: Double, lng: Double, cityName: String) -> Unit,
+        onDone: () -> Unit,
+    ) -> Unit = { _, _, done -> done() },
     onComplete: (
         name: String,
         birthDateEpochMs: Long,
@@ -63,9 +69,10 @@ fun OnboardingScreen(
     var hour by remember { mutableStateOf("12") }
     var minute by remember { mutableStateOf("0") }
     var knowsBirthTime by remember { mutableStateOf(true) }
-    var lat by remember { mutableStateOf("40.7128") }
-    var lng by remember { mutableStateOf("-74.0060") }
+    var lat by remember { mutableStateOf("") }
+    var lng by remember { mutableStateOf("") }
     var tzId by remember { mutableStateOf(TimeZone.getDefault().id) }
+    var geocoding by remember { mutableStateOf(false) }
 
     val enter = rememberSeaEnterProgress()
     val fieldColors = OutlinedTextFieldDefaults.colors(
@@ -176,14 +183,35 @@ fun OnboardingScreen(
             },
         )
 
-        Text("Coordinates (geocoder next)", style = MaterialTheme.typography.labelLarge, color = SeaFaint)
+        SeaSecondaryButton(
+            text = if (geocoding) "Looking up city…" else "Lookup city coordinates",
+            enabled = birthCity.isNotBlank() && !geocoding && !isLoading,
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                geocoding = true
+                onGeocodeCity(
+                    birthCity.trim(),
+                    { gLat, gLng, gCity ->
+                        lat = "%.4f".format(gLat)
+                        lng = "%.4f".format(gLng)
+                        birthCity = gCity
+                    },
+                    { geocoding = false },
+                )
+            },
+        )
+        Text(
+            "Leave lat/lng empty to geocode city on submit. Manual coords still work offline.",
+            style = MaterialTheme.typography.bodySmall,
+            color = SeaFaint,
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             OutlinedTextField(
-                value = lat, onValueChange = { lat = it }, label = { Text("Lat") },
+                value = lat, onValueChange = { lat = it }, label = { Text("Lat (optional)") },
                 modifier = Modifier.weight(1f), colors = fieldColors, singleLine = true,
             )
             OutlinedTextField(
-                value = lng, onValueChange = { lng = it }, label = { Text("Lng") },
+                value = lng, onValueChange = { lng = it }, label = { Text("Lng (optional)") },
                 modifier = Modifier.weight(1f), colors = fieldColors, singleLine = true,
             )
         }
@@ -227,7 +255,7 @@ fun OnboardingScreen(
                         if (hasTime) cal.timeInMillis else null,
                         lat.toDoubleOrNull() ?: 0.0,
                         lng.toDoubleOrNull() ?: 0.0,
-                        birthCity.ifBlank { "Unknown" },
+                        birthCity.trim().ifBlank { "Unknown" },
                     )
                 },
             )

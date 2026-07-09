@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,6 +45,8 @@ fun SettingsScreen(
     onSignInEmail: (String) -> Unit = {},
     onSignOut: () -> Unit = {},
     onManageSubscription: () -> Unit = {},
+    onBedtimeToggle: (Boolean) -> Unit = {},
+    onTransitLocationToggle: (Boolean) -> Unit = {},
     localUserId: String? = null,
     authStatusMessage: String? = null,
 ) {
@@ -147,10 +150,55 @@ fun SettingsScreen(
             }
         }
 
+        SeaGlassCard {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                Text("Sleep", style = MaterialTheme.typography.titleSmall, color = SeaBiolume)
+                RowToggle(
+                    label = "Bedtime reminder (10:30 PM)",
+                    checked = state.profile?.notificationEnabled == true,
+                    onCheckedChange = onBedtimeToggle,
+                )
+                RowToggle(
+                    label = "Use current location for transits",
+                    checked = state.profile?.useCurrentLocationForTransits == true,
+                    onCheckedChange = onTransitLocationToggle,
+                )
+                Text(
+                    "Reminders reschedule after reboot. Location uses birth place when GPS is off.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = SeaFaint,
+                )
+            }
+        }
+
+        state.personalFingerprint?.let { fp ->
+            Text(
+                "Sonic fingerprint · ${fp.toString(16).take(8)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = SeaFaint,
+            )
+        }
+
         Text(
             "Digital Sea · Emil/Apple motion · Liquid Glass family",
             style = MaterialTheme.typography.labelSmall,
             color = SeaFaint,
         )
+    }
+}
+
+@Composable
+private fun RowToggle(
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    androidx.compose.foundation.layout.Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, color = SeaText, modifier = Modifier.weight(1f))
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }

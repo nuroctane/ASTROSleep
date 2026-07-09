@@ -140,8 +140,7 @@ Every sound is tagged on axes such as **domain** (water/fire/…), **celestial**
 | **3×** | `rhythm`, `motion` |
 | **2×** | register, context, weight, texture, density, temperature, polarity |
 
-- **iOS:** Tag Engine v3 — nightly × tag vector ranking (see [`documentation/TAG_ENGINE_GUIDE.md`](documentation/TAG_ENGINE_GUIDE.md))
-- **Android:** Tag Engine **v4** — personal sound profile, multi-factor scoring, role-based `ComboComposer` (see [`documentation/TAG_ENGINE_ANDROID_V4.md`](documentation/TAG_ENGINE_ANDROID_V4.md))
+- **Both platforms:** Tag Engine **v4** — personal sound profile, multi-factor scoring, role-based `ComboComposer`. Keep iOS/Android scoring in lockstep (see [`documentation/TAG_ENGINE_ANDROID_V4.md`](documentation/TAG_ENGINE_ANDROID_V4.md), [`documentation/TAG_ENGINE_IOS_V4_PORT.md`](documentation/TAG_ENGINE_IOS_V4_PORT.md)).
 
 ### Element vector
 
@@ -155,16 +154,20 @@ Every sound is tagged on axes such as **domain** (water/fire/…), **celestial**
 |------|-----|---------|
 | Onboarding + local profile | ✅ | ✅ |
 | Natal + nightly engines | ✅ (post-bugfix) | ✅ (post-bugfix) |
-| Tag ranking | ✅ v3 | ✅ v4 (deeper personalization) |
+| Tag ranking | ✅ **v4** personalization | ✅ **v4** personalization |
 | Multi-track playback + loop | ✅ | ✅ (ExoPlayer repeat) |
 | Sleep timer fade | ✅ | ✅ (volume restore fixed) |
 | Background audio | ✅ (AV session) | ✅ FGS shell (`PlaybackService`) |
 | TTS affirmations | ✅ wired | ✅ wired |
 | AI affirmation network | ✅ | ✅ |
-| Auth (Supabase) | ✅ (+ Apple Sign-In path) | 🟡 local anonymous shell |
+| Auth (Supabase) | ✅ (+ Apple Sign-In path) | 🟡 local anonymous shell (email identity) |
 | RevenueCat production | 🟡 DEBUG stub gated | 🟡 SDK shell |
-| Sound assets in-repo | Manifest only | Manifest only (CDN/bundle expected) |
-| Unit tests | Limited (Swift) | ✅ engines + personalization |
+| Sound assets in-repo | Manifest only | Manifest only (CDN/bundle + **cache pipeline**) |
+| Per-layer EQ | ✅ AVAudioUnitEQ | ✅ system Equalizer |
+| Library / saved combos | ✅ | ✅ Room UX |
+| Bedtime notifications | ✅ | ✅ + boot reschedule |
+| Geocoding | ✅ | ✅ |
+| Unit tests | Limited (Swift / no Xcodeproj in repo) | ✅ engines + personalization + fingerprint golden |
 
 Detailed recent fixes: [`documentation/BUGFIX_SPRINT_NOTES.md`](documentation/BUGFIX_SPRINT_NOTES.md)
 
@@ -373,16 +376,22 @@ python AstroSleep-iOS/Sounds/validate_manifest.py
 - [x] iOS auth refresh re-applies `currentUserId`  
 - [x] Android RC purchase path + Play manage deep-link; optional birth-time toggle  
 
-### Still open
+### Still open (secrets / stores / device — your side)
 
-- [ ] Ship bundled or reliably cached **audio assets** for offline first-run  
-- [ ] Production **StoreKit** RC wiring on iOS (SDK package still stubbed outside key config)  
-- [ ] Full **Supabase** magic-link / Google Sign-In (keys + NetworkService OTP send)  
-- [ ] Port **TagEngine v4** personalization to iOS for parity (Android ships v4; iOS remains v3 until port)  
-- [ ] Geocoder polish (city → lat/lng)  
-- [ ] Bedtime notifications (boot-safe, runtime permissions)  
+- [ ] Ship real **audio binaries** (or live CDN files) for offline first-run demos  
+- [ ] Production **StoreKit / Play Billing** + RevenueCat product mapping with real keys  
+- [ ] Full **Supabase** magic-link / Google Sign-In (project keys)  
 - [ ] Swiss Ephemeris (or equivalent) for production-grade positions  
-- [ ] Android EQ apply on ExoPlayer layers  
+- [ ] Cosmic body tour / tonight overlay / personal markers  
+- [ ] Device / TestFlight / Play internal testing + store submission  
+
+### Completed recently
+
+- [x] TagEngine **v4** on iOS + Android (keep engines synced)  
+- [x] Android EQ on layers · sound CDN cache · Library tab  
+- [x] Geocoding Android + iOS polish  
+- [x] Bedtime notifications + boot reschedule (Android)  
+- [x] Fingerprint golden tests · guest affirmation user_id fix  
 
 
 ---
@@ -392,7 +401,7 @@ python AstroSleep-iOS/Sounds/validate_manifest.py
 - Prefer small commits per concern (engines · audio · auth · UI)  
 - Keep engine golden tests green when changing sign/moon math  
 - Do not commit `local.properties`, keystores, xcconfig secrets, or large binary dumps without agreement  
-- Dual-platform changes to shared math should update **both** `AstrologicalEngine` implementations  
+- Dual-platform changes to shared math should update **both** `AstrologicalEngine` **and** Tag Engine v4 stacks (`PersonalSoundProfile` / `TagEngine` / `ComboComposer`) — never leave iOS and Android engines out of sync  
 
 ---
 

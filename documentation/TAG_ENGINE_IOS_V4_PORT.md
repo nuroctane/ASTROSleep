@@ -1,21 +1,30 @@
-# TagEngine v4 → iOS port plan
+# TagEngine v4 → iOS port
 
-Android ships **TagEngine v4** with:
+**Status: DONE (2026-07-09).** iOS and Android both ship Tag Engine v4. Keep them synced.
 
-- `PersonalSoundProfile` (stable fingerprint from natal + user id)
-- Affinity tables + combo stacking via `ComboComposer`
-- Score breakdowns on `RankedSound`
+## What shipped on iOS
 
-iOS currently remains on **v3** (`TagEngine.swift`) for chart/night scoring without the personalization fingerprint path.
+| Piece | Path |
+|-------|------|
+| `PersonalSoundProfile` + `StackRole` | `Core/Engine/PersonalSoundProfile.swift` |
+| Affinity tables | `Core/Engine/TagAffinityTables.swift` |
+| Tag Engine v4 ranking | `Core/Engine/TagEngine.swift` |
+| Role-based stacking | `Core/Engine/ComboComposer.swift` |
+| Score breakdown | `ScoreBreakdown` on `RankedSound` in `Sound.swift` |
+| Wiring | `AppState.autoGenerateCombo` → `ComboComposer.compose` |
 
-## Port checklist
+Parity notes:
 
-1. Port `PersonalSoundProfile` hashing (match Android bit layout for cross-device parity tests).
-2. Port affinity / vector tables (`TagAffinityTables`, `TagVectorTables`).
-3. Introduce `ComboComposer` equivalent; keep free tier 2-layer cap.
-4. Golden tests: same userId + natal fixtures → same fingerprint + top-N sound ids.
-5. Wire `AppState.autoGenerateCombo` through composer; keep offline cache path.
+- FNV-1a 64-bit fingerprint algorithm matches Android `PersonalSoundProfile.fingerprint`
+- Fingerprint jitter uses the same LCG-style mix as Android
+- Dimension weights, role gains, affinity tables, and score terms mirrored from Kotlin
+- Free tier still uses `tier.maxLayers` (2) via composer
 
-## UX note
+## Ongoing parity rule
 
-Fingerprint may appear as truncated hex in Tonight “layers · fp …” (Android). iOS can show the same once ported — quiet, mono, not gamified.
+**Any change to scoring, affinity tables, role stacking, or fingerprint math must land on both platforms in the same change set.** Do not advance Android v4 features without the Swift twin (and vice versa).
+
+## Remaining polish
+
+1. Optional golden tests: same userId + natal fixtures → same fingerprint + top-N sound ids (cross-platform).
+2. Tonight UI: quiet mono truncated hex for `personalFingerprint` (Android already can show “layers · fp …”).

@@ -19,16 +19,22 @@ import com.astrosleep.app.core.model.SubscriptionTier
 import com.astrosleep.app.core.model.UserProfile
 import com.astrosleep.app.data.StorageRepository
 import com.astrosleep.app.service.AuthService
+import com.astrosleep.app.service.GeocodingException
+import com.astrosleep.app.service.GeocodingService
 import com.astrosleep.app.service.NetworkError
 import com.astrosleep.app.service.NetworkService
+import com.astrosleep.app.service.NotificationService
 import com.astrosleep.app.service.RevenueCatService
+import com.astrosleep.app.service.SoundCacheService
 import com.astrosleep.app.service.audio.AudioService
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -57,6 +63,7 @@ data class AppUiState(
     val localUserId: String? = null,
     val authEmail: String? = null,
     val authStatusMessage: String? = null,
+    val savedCombos: List<Combo> = emptyList(),
 )
 
 @HiltViewModel
@@ -70,6 +77,9 @@ class AppViewModel @Inject constructor(
     private val networkService: NetworkService,
     private val authService: AuthService,
     private val revenueCat: RevenueCatService,
+    private val geocodingService: GeocodingService,
+    private val notifications: NotificationService,
+    private val soundCache: SoundCacheService,
 ) : ViewModel() {
 
     private val _ui = MutableStateFlow(AppUiState())
@@ -141,6 +151,9 @@ class AppViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Complete onboarding. Prefer [birthCity] geocoding when lat/lng are zero/blank.
+     */
     fun completeOnboarding(
         name: String,
         birthDateEpochMs: Long,
@@ -152,11 +165,29 @@ class AppViewModel @Inject constructor(
         viewModelScope.launch {
             _ui.update { it.copy(isLoading = true, errorMessage = null) }
             try {
+                var lat = birthLat
+                var lng = birthLng
+                var city = birthCity.trim().ifBlank { "Unknown" }
+                val needsGeocode = city != "Unknown" &&
+                    (kotlin.math.abs(lat) < 1e-6 && kotlin.math.abs(lng) < 1e-6 || birthLat == 0.0 && birthLng == 0.0)
+                if (needsGeocode || (city.isNotBlank() && city != "Unknown" && kotlin.math.abs(lat) < 1e-6)) {
+                    try {
+                        val geo = geocodingService.geocode(city)
+                        lat = geo.lat
+                        lng = geo.lng
+                        city = geo.city
+                    } catch (e: GeocodingException) {
+                        if (kotlin.math.abs(lat) < 1e-6 && kotlin.math.abs(lng) < 1e-6) {
+                            throw e
+                        }
+                        // Keep manual coords if geocode fails but user entered numbers
+                    }
+                }
                 val chart = astroEngine.computeNatalChart(
                     birthDateEpochMs = birthDateEpochMs,
                     birthTimeEpochMs = birthTimeEpochMs,
-                    lat = birthLat,
-                    lng = birthLng,
+                    lat = lat,
+                    lng = lng,
                 )
                 val baseScore = astroEngine.deriveBaseScore(chart)
                 val profile = UserProfile(
@@ -164,9 +195,9 @@ class AppViewModel @Inject constructor(
                     name = name,
                     birthDateEpochMs = birthDateEpochMs,
                     birthTimeEpochMs = birthTimeEpochMs,
-                    birthLat = birthLat,
-                    birthLng = birthLng,
-                    birthCity = birthCity,
+                    birthLat = lat,
+                    birthLng = lng,
+                    birthCity = city,
                     baseScore = baseScore,
                     natalChart = chart,
                     hasCompletedOnboarding = true,
@@ -185,6 +216,24 @@ class AppViewModel @Inject constructor(
                 _ui.update {
                     it.copy(isLoading = false, errorMessage = e.message ?: "Onboarding failed")
                 }
+            }
+        }
+    }
+
+    fun geocodeCityPreview(
+        city: String,
+        onResult: (lat: Double, lng: Double, name: String) -> Unit,
+        onDone: () -> Unit = {},
+    ) {
+        viewModelScope.launch {
+            try {
+                val geo = geocodingService.geocode(city)
+                onResult(geo.lat, geo.lng, geo.city)
+                _ui.update { it.copy(errorMessage = null) }
+            } catch (e: Exception) {
+                _ui.update { it.copy(errorMessage = e.message ?: "Geocode failed") }
+            } finally {
+                onDone()
             }
         }
     }
@@ -243,6 +292,10 @@ class AppViewModel @Inject constructor(
                 personalFingerprint = result.profile.fingerprint,
             )
         }
+        // Prefetch audio for top layers (bundle → cache → CDN)
+        viewModelScope.launch(Dispatchers.IO) {
+            soundCache.prefetch(result.combo.layers.map { it.soundId })
+        }
         return result.combo
     }
 
@@ -290,6 +343,9 @@ class AppViewModel @Inject constructor(
                 ?: withVoice.sleepTimerMinutes
                 ?: _ui.value.profile?.sleepTimerDefault
             audioService.play(timer)
+            timer?.takeIf { it > 0 }?.let { minutes ->
+                notifications.scheduleSessionCompleteNotification(minutes)
+            }
             val speak = withVoice.affirmationLayer.text.takeIf { it.isNotBlank() }
                 ?: _ui.value.cachedAffirmation
             speak?.let {
@@ -313,7 +369,10 @@ class AppViewModel @Inject constructor(
             return
         }
         if (_ui.value.cachedAffirmation != null) return
-        val userId = authService.currentUserId ?: return
+        // Parity with iOS: auth id → profile id → guest
+        val userId = authService.currentUserId
+            ?: _ui.value.profile?.id
+            ?: "guest"
         try {
             val script = networkService.generateAffirmation(intention, userId)
             storage.cacheAffirmation(
@@ -327,16 +386,82 @@ class AppViewModel @Inject constructor(
             _ui.update { it.copy(cachedAffirmation = script) }
         } catch (_: NetworkError.RateLimited) {
             // silent — rate limited; session still plays ambient
-        } catch (e: Exception) {
-            // Offline: keep ambient; surface soft error only if nothing else
-            if (_ui.value.cachedAffirmation == null) {
-                _ui.update { it.copy(errorMessage = null) }
-            }
+        } catch (_: Exception) {
+            // Offline: keep ambient
         }
     }
 
     fun selectTab(index: Int) {
         _ui.update { it.copy(selectedTab = index) }
+        if (index == 3) refreshLibrary()
+    }
+
+    fun refreshLibrary() {
+        viewModelScope.launch {
+            val combos = storage.loadCombos()
+            _ui.update { it.copy(savedCombos = combos) }
+        }
+    }
+
+    fun saveActiveCombo() {
+        val combo = _ui.value.activeCombo ?: return
+        val tier = _ui.value.currentTier
+        viewModelScope.launch {
+            val existing = storage.loadCombos()
+            if (existing.none { it.id == combo.id } && existing.size >= tier.maxPlaylists &&
+                tier.maxPlaylists != Int.MAX_VALUE
+            ) {
+                if (!enforceTier(SubscriptionTier.SUBSCRIPTION, "Saved playlists")) return@launch
+            }
+            storage.saveCombo(combo)
+            refreshLibrary()
+        }
+    }
+
+    fun deleteCombo(id: String) {
+        viewModelScope.launch {
+            storage.deleteCombo(id)
+            refreshLibrary()
+        }
+    }
+
+    fun playSavedCombo(combo: Combo) {
+        startSession(combo = combo)
+    }
+
+    fun setBedtimeReminder(enabled: Boolean, hour: Int = 22, minute: Int = 30) {
+        viewModelScope.launch {
+            if (enabled) {
+                notifications.scheduleBedtimeReminder(hour, minute)
+            } else {
+                notifications.cancelBedtimeReminder()
+            }
+            storage.updateProfile { p ->
+                p.copy(
+                    notificationEnabled = enabled,
+                    bedtimeReminderEpochMs = if (enabled) {
+                        Calendar.getInstance().apply {
+                            set(Calendar.HOUR_OF_DAY, hour)
+                            set(Calendar.MINUTE, minute)
+                        }.timeInMillis
+                    } else {
+                        null
+                    },
+                )
+            }?.let { updated ->
+                _ui.update { it.copy(profile = updated) }
+            }
+        }
+    }
+
+    fun updateTransitLocationToggle(useCurrent: Boolean) {
+        viewModelScope.launch {
+            storage.updateProfile { it.copy(useCurrentLocationForTransits = useCurrent) }?.let { p ->
+                _ui.update { it.copy(profile = p) }
+                lastNightlyScoreDate = null
+                computeNightlyScore()
+            }
+        }
     }
 
     fun enforceTier(required: SubscriptionTier, feature: String): Boolean {

@@ -123,6 +123,50 @@ class TagEnginePersonalizationTest {
     }
 
     @Test
+    fun fingerprint_isDeterministic_sameInputs() {
+        val chart = chartFor(1991, Calendar.JULY, 4)
+        val base = astro.deriveBaseScore(chart)
+        val a = PersonalSoundProfile.from("stable-user", chart, base)
+        val b = PersonalSoundProfile.from("stable-user", chart, base)
+        assertEquals(a.fingerprint, b.fingerprint)
+        assertEquals(a.dimensionMultipliers, b.dimensionMultipliers)
+        assertEquals(a.natalPull, b.natalPull, 1e-9)
+        assertEquals(a.roleOrder, b.roleOrder)
+        val night = fixedNight()
+        val topA = tagEngine.rankSoundsPersonalized(catalog, night, a, base, chart).take(7).map { it.sound.id }
+        val topB = tagEngine.rankSoundsPersonalized(catalog, night, b, base, chart).take(7).map { it.sound.id }
+        assertEquals(topA, topB)
+        val jitterA = tagEngine.fingerprintJitter(a.fingerprint, "heavy_rain")
+        val jitterB = tagEngine.fingerprintJitter(b.fingerprint, "heavy_rain")
+        assertEquals(jitterA, jitterB, 1e-12)
+    }
+
+    @Test
+    fun composer_respectsMaxLayers_perTier() {
+        val chart = chartFor(1994, Calendar.APRIL, 10)
+        val base = astro.deriveBaseScore(chart)
+        val free = composer.compose(
+            userId = "tier-user",
+            sounds = catalog,
+            nightly = fixedNight(),
+            natalBaseScore = base,
+            chart = chart,
+            tier = SubscriptionTier.FREE,
+        )
+        val pro = composer.compose(
+            userId = "tier-user",
+            sounds = catalog,
+            nightly = fixedNight(),
+            natalBaseScore = base,
+            chart = chart,
+            tier = SubscriptionTier.LIFETIME,
+        )
+        assertEquals(2, free.combo.layers.size)
+        assertTrue(pro.combo.layers.size in 1..7)
+        assertTrue(pro.combo.layers.size >= free.combo.layers.size)
+    }
+
+    @Test
     fun moonPhase_shiftsRanking() {
         val chart = chartFor(1993, Calendar.MAY, 20)
         val base = astro.deriveBaseScore(chart)
