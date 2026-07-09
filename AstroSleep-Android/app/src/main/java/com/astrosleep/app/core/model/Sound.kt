@@ -67,11 +67,8 @@ data class SoundManifest(
     val sounds: List<Sound> = emptyList(),
 )
 
-data class RankedSound(
-    val sound: Sound,
-    val score: Double,
-    val matchPercentage: Double = 0.0,
-) : Comparable<RankedSound> {
-    val id: String get() = sound.id
-    override fun compareTo(other: RankedSound): Int = score.compareTo(other.score)
-}
+/** All tag values on a sound as a flat set for affinity lookups. */
+fun SoundTags.allValues(): Set<String> = setOf(
+    domain, rhythm, register, context, weight, texture,
+    motion, density, temperature, polarity, celestial, archetype,
+)

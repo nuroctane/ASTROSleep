@@ -56,9 +56,15 @@ fun TonightScreen(
             Card {
                 Column {
                     Text(combo.name, style = MaterialTheme.typography.titleMedium)
-                    Text("${combo.layerCount} ambient layers · ${state.currentTier.displayName}")
+                    Text(
+                        "${combo.layerCount} layers · ${state.currentTier.displayName}" +
+                            (state.personalFingerprint?.let { " · fp ${it.toString(16).take(8)}" } ?: ""),
+                    )
                     combo.layers.forEach { layer ->
-                        Text("• ${layer.soundId} @ ${"%.0f".format(layer.volume * 100)}%")
+                        Text(
+                            "• ${layer.soundId} @ ${"%.0f".format(layer.volume * 100)}%" +
+                                " · ${"%.2f".format(layer.playbackSpeed)}x",
+                        )
                     }
                 }
             }

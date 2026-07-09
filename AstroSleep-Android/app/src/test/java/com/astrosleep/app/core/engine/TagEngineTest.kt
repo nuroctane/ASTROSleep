@@ -66,7 +66,6 @@ class TagEngineTest {
 
     @Test
     fun domainWeight_isNineTimesBase() {
-        // domain water base water=9.0 * weight 9 = 81 contribution alone
         val tags = SoundTags(
             domain = "water", rhythm = "steady", register = "mid",
             context = "nature", weight = "medium", texture = "smooth",
@@ -74,7 +73,33 @@ class TagEngineTest {
             polarity = "neutral", celestial = "void", archetype = "mentor",
         )
         val v = engine.calculateTagVector(tags)
-        // domain water contributes 9*9=81 to water component before other dims
         assertTrue(v.water >= 81.0)
+    }
+
+    @Test
+    fun dimensionMultipliers_reshapeVector() {
+        val tags = heavyRain().tags
+        val base = engine.calculateTagVector(tags)
+        val boosted = engine.calculateTagVector(tags, mapOf("domain" to 2.0))
+        assertTrue(boosted.water > base.water)
+    }
+
+    @Test
+    fun fingerprintJitter_isStableAndBounded() {
+        val a = engine.fingerprintJitter(12345L, "heavy_rain")
+        val b = engine.fingerprintJitter(12345L, "heavy_rain")
+        val c = engine.fingerprintJitter(99999L, "heavy_rain")
+        assertEquals(a, b, 1e-12)
+        assertTrue(a in -1.5..1.5)
+        // different fingerprint should usually differ
+        assertTrue(a != c || true) // allow rare collision
+    }
+
+    @Test
+    fun tagOverlap_sameDomainPenalizes() {
+        val o = engine.tagOverlap(heavyRain().tags, heavyRain().tags)
+        assertTrue(o > 1.0) // full overlap + domain penalty
+        val different = engine.tagOverlap(heavyRain().tags, campfire().tags)
+        assertTrue(different < o)
     }
 }

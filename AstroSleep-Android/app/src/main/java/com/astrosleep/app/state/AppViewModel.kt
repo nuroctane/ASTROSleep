@@ -3,22 +3,20 @@ package com.astrosleep.app.state
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.astrosleep.app.core.engine.AstrologicalEngine
+import com.astrosleep.app.core.engine.ComboComposer
+import com.astrosleep.app.core.engine.PersonalSoundProfile
 import com.astrosleep.app.core.engine.TagEngine
 import com.astrosleep.app.core.model.AffirmationCache
-import com.astrosleep.app.core.model.AffirmationLayer
 import com.astrosleep.app.core.model.AmbientLayer
 import com.astrosleep.app.core.model.Combo
 import com.astrosleep.app.core.model.ComboSource
-import com.astrosleep.app.core.model.Element
 import com.astrosleep.app.core.model.EQProfile
 import com.astrosleep.app.core.model.NightlyScoreResult
-import com.astrosleep.app.core.model.OscillationConfig
+import com.astrosleep.app.core.model.RankedSound
 import com.astrosleep.app.core.model.Sound
 import com.astrosleep.app.core.model.SoundLibrary
 import com.astrosleep.app.core.model.SubscriptionTier
 import com.astrosleep.app.core.model.UserProfile
-import com.astrosleep.app.core.model.Waveform
-import com.astrosleep.app.core.model.roundedTo
 import com.astrosleep.app.data.StorageRepository
 import com.astrosleep.app.service.AuthService
 import com.astrosleep.app.service.NetworkError
@@ -53,6 +51,9 @@ data class AppUiState(
     val errorMessage: String? = null,
     val isPlaying: Boolean = false,
     val soundCount: Int = 0,
+    /** Top ranked sounds for the current user+night (for Sounds tab / debug). */
+    val rankedPreview: List<RankedSound> = emptyList(),
+    val personalFingerprint: Long? = null,
 )
 
 @HiltViewModel
@@ -60,6 +61,7 @@ class AppViewModel @Inject constructor(
     private val storage: StorageRepository,
     private val astroEngine: AstrologicalEngine,
     private val tagEngine: TagEngine,
+    private val comboComposer: ComboComposer,
     private val soundLibrary: SoundLibrary,
     private val audioService: AudioService,
     private val networkService: NetworkService,
@@ -178,36 +180,54 @@ class AppViewModel @Inject constructor(
     fun autoGenerateCombo(intention: String = ""): Combo {
         computeNightlyScore()
         val tier = _ui.value.currentTier
+        val profile = _ui.value.profile
         val score = _ui.value.nightlyScore
             ?: return createDefaultCombo(tier)
 
-        val ranked = tagEngine.rankSounds(soundLibrary.sounds, score)
-        val topRanked = ranked.take(tier.maxLayers)
-        val totalScore = topRanked.sumOf { it.score }
+        val userId = profile?.id
+            ?: authService.currentUserId
+            ?: UUID.randomUUID().toString()
+        val baseScore = profile?.baseScore ?: score.elementScore
+        val chart = profile?.natalChart
 
-        val layers = topRanked.mapIndexed { index, rankedSound ->
-            val volume = if (totalScore > 0) (rankedSound.score / totalScore) * 0.75 else 0.15
-            AmbientLayer(
-                soundId = rankedSound.sound.id,
-                volume = volume.roundedTo(2),
-                playbackSpeed = 1.0,
-                eq = EQProfile.profileForRegister(rankedSound.sound.tags.register),
-                oscillation = buildOscillation(index, score.dominantElement),
+        val result = comboComposer.compose(
+            userId = userId,
+            sounds = soundLibrary.sounds,
+            nightly = score,
+            natalBaseScore = baseScore,
+            chart = chart,
+            tier = tier,
+            voiceId = profile?.selectedVoiceId ?: "female",
+        )
+
+        _ui.update {
+            it.copy(
+                activeCombo = result.combo,
+                rankedPreview = result.ranked.take(12),
+                personalFingerprint = result.profile.fingerprint,
             )
         }
+        return result.combo
+    }
 
-        val combo = Combo(
-            id = UUID.randomUUID().toString(),
-            name = "${score.moonPhase.displayName} Session",
-            source = ComboSource.AUTO,
-            chartSnapshot = score.toSnapshot(),
-            layers = layers,
-            affirmationLayer = AffirmationLayer(
-                voiceId = _ui.value.profile?.selectedVoiceId ?: "female",
-            ),
+    /** Recompute ranked preview without building a full combo (e.g. Sounds tab). */
+    fun refreshRankedPreview() {
+        val profile = _ui.value.profile ?: return
+        val score = _ui.value.nightlyScore ?: return
+        val personal = PersonalSoundProfile.from(profile.id, profile.natalChart, profile.baseScore)
+        val ranked = tagEngine.rankSoundsPersonalized(
+            sounds = soundLibrary.sounds,
+            nightly = score,
+            profile = personal,
+            natalBaseScore = profile.baseScore,
+            chart = profile.natalChart,
         )
-        _ui.update { it.copy(activeCombo = combo) }
-        return combo
+        _ui.update {
+            it.copy(
+                rankedPreview = ranked.take(12),
+                personalFingerprint = personal.fingerprint,
+            )
+        }
     }
 
     fun startSession(combo: Combo? = null, sleepTimerMinutes: Int? = null) {
@@ -291,35 +311,6 @@ class AppViewModel @Inject constructor(
         _ui.update { it.copy(activeCombo = combo) }
         return combo
     }
-
-    private fun buildOscillation(index: Int, dominant: Element): OscillationConfig? =
-        when (dominant) {
-            Element.WATER -> OscillationConfig(
-                enabled = index == 0,
-                waveform = Waveform.SINE,
-                periodSeconds = 45.0,
-                minVolume = 0.45,
-                maxVolume = 0.85,
-                phaseOffset = index * 0.33,
-            )
-            Element.AIR -> OscillationConfig(
-                enabled = index <= 1,
-                waveform = Waveform.PERLIN,
-                periodSeconds = 18.0,
-                minVolume = 0.40,
-                maxVolume = 0.80,
-                phaseOffset = index * 0.33,
-            )
-            Element.FIRE -> OscillationConfig(
-                enabled = index == 0,
-                waveform = Waveform.PERLIN,
-                periodSeconds = 12.0,
-                minVolume = 0.35,
-                maxVolume = 0.75,
-                phaseOffset = index * 0.33,
-            )
-            Element.EARTH -> null
-        }
 
     private fun isSameDay(a: Long, b: Long): Boolean {
         val ca = Calendar.getInstance().apply { timeInMillis = a }
