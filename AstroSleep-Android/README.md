@@ -5,7 +5,21 @@ iOS source of truth: `../AstroSleep-iOS/` · plan: `../documentation/ANDROID_POR
 
 ## Status
 
-**Scaffold (week start)** — project shell, models, engine stubs, theme, unit test for `ElementVector`, bundled `sounds_manifest.json`.
+**Phases A–C in progress** — engines ported with iOS parity tests (20/20 unit tests green), Room storage, AppViewModel core loop, multi-track AudioService, Auth/Network/RevenueCat shells, Compose onboarding + Tonight/Sounds/Library/Settings UI.
+
+| Area | Status |
+|------|--------|
+| TagEngine + lookup tables | ✅ full port |
+| AstrologicalEngine | ✅ full port |
+| ElementVector presets | ✅ full port |
+| Room + StorageRepository | ✅ |
+| SoundLibrary (manifest) | ✅ |
+| AppViewModel (score, combo, session) | ✅ |
+| AudioService (ExoPlayer layers, LFO, fade, TTS) | ✅ |
+| RevenueCat / Network / Auth shells | ✅ |
+| Compose UI shell | ✅ functional |
+| Background MediaSession polish | ⏳ |
+| Geocoder / full paywall purchase flow | ⏳ |
 
 ## Open in Android Studio
 
