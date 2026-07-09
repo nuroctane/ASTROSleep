@@ -58,9 +58,37 @@ class AstrologicalEngineTest {
 
     @Test
     fun calculateMoonPhase_knownNewMoonWindow() {
-        // Epoch used in engine: 946684800000 ≈ 2000-01-01
-        val phase = engine.calculateMoonPhase(946_684_800_000L)
+        // Known new moon epoch: 2000-01-06 18:14 UTC
+        val phase = engine.calculateMoonPhase(947_182_440_000L)
         assertEquals(MoonPhase.NEW_MOON, phase)
+    }
+
+    @Test
+    fun signFromLongitude_coversAllThirteenSignsIncludingPisces() {
+        // Equal 13-sign sectors: every ordinal including Pisces must be reachable.
+        val sector = 360.0 / 13.0
+        val all = (0 until 13).map { i ->
+            val lon = i * sector + 0.1
+            val index = minOf((lon / sector).toInt(), 12)
+            com.astrosleep.app.core.model.Sign.entries[index]
+        }.toSet()
+        assertEquals(13, all.size)
+        assertTrue(all.contains(com.astrosleep.app.core.model.Sign.PISCES))
+        assertTrue(all.contains(com.astrosleep.app.core.model.Sign.OPHIUCHUS))
+    }
+
+    @Test
+    fun birthTime_affectsAscendantPresence() {
+        val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+            set(1990, Calendar.JUNE, 15, 12, 0, 0)
+        }
+        val withTime = engine.computeNatalChart(cal.timeInMillis, cal.timeInMillis, 40.7, -74.0)
+        val without = engine.computeNatalChart(cal.timeInMillis, null, 40.7, -74.0)
+        assertTrue(withTime.hasBirthTime)
+        assertNotNull(withTime.ascendant)
+        assertTrue(withTime.placements.any { it.house != null })
+        assertTrue(!without.hasBirthTime)
+        assertEquals(null, without.ascendant)
     }
 
     @Test

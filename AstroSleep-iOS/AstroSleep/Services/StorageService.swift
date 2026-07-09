@@ -265,12 +265,20 @@ final class StorageService {
     // MARK: - Affirmation Cache
     
     func cacheAffirmation(_ cache: AffirmationCache) throws {
-        let entity = CDAffirmationCache(context: context)
-        entity.calendarDate = cache.id
+        // Upsert by calendar date so we don't accumulate duplicates.
+        let request = CDAffirmationCache.fetchRequest()
+        request.predicate = NSPredicate(format: "calendarDate == %@", cache.id)
+        request.fetchLimit = 1
+        let entity: CDAffirmationCache
+        if let existing = try context.fetch(request).first {
+            entity = existing
+        } else {
+            entity = CDAffirmationCache(context: context)
+            entity.calendarDate = cache.id
+        }
         entity.script = cache.script
         entity.generatedAt = cache.generatedAt
         entity.intention = cache.intention
-        
         try context.save()
     }
     
@@ -304,8 +312,14 @@ final class StorageService {
         for entityName in entities {
             let request = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
             let batchDelete = NSBatchDeleteRequest(fetchRequest: request)
-            try context.execute(batchDelete)
+            batchDelete.resultType = .resultTypeObjectIDs
+            let result = try context.execute(batchDelete) as? NSBatchDeleteResult
+            if let objectIDs = result?.result as? [NSManagedObjectID] {
+                let changes = [NSDeletedObjectsKey: objectIDs]
+                NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [context])
+            }
         }
+        context.reset()
         try context.save()
     }
     

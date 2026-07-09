@@ -218,16 +218,17 @@ final class AuthService: ObservableObject {
                     request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
                     request.setValue(supabaseAnonKey, forHTTPHeaderField: "apikey")
                     
-                    let (_, response) = try await URLSession.shared.data(for: request)
+                    let (data, response) = try await URLSession.shared.data(for: request)
                     
                     if let httpResponse = response as? HTTPURLResponse,
                        httpResponse.statusCode == 200 {
-                        // Token valid
+                        let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+                        let uid = json?["id"] as? String
                         await MainActor.run {
                             self.isAuthenticated = true
+                            self.currentUserId = uid
                         }
                     } else {
-                        // Try refresh
                         try await refreshSession()
                     }
                 }
@@ -356,8 +357,12 @@ enum SecureStorage {
             kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
         ]
         
-        // Delete existing
-        SecItemDelete(query as CFDictionary)
+        // Delete existing by class+account only (including kSecValueData prevents match).
+        let deleteQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: "com.astrosleep.\(key)"
+        ]
+        SecItemDelete(deleteQuery as CFDictionary)
         
         let status = SecItemAdd(query as CFDictionary, nil)
         guard status == errSecSuccess else {

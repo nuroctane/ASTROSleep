@@ -165,13 +165,15 @@ class AppViewModel @Inject constructor(
         if (last != null && isSameDay(last, now) && _ui.value.nightlyScore != null) {
             return
         }
+        val transitLat = if (profile.useCurrentLocationForTransits) profile.currentLat else profile.birthLat
+        val transitLng = if (profile.useCurrentLocationForTransits) profile.currentLng else profile.birthLng
         val score = astroEngine.calculateNightlyScore(
             baseScore = profile.baseScore,
             dateEpochMs = now,
             natalChart = chart,
-            currentLat = profile.currentLat,
-            currentLng = profile.currentLng,
-            useCurrentLocation = profile.useCurrentLocationForTransits,
+            currentLat = transitLat,
+            currentLng = transitLng,
+            useCurrentLocation = true, // coordinates already resolved (birth or GPS)
         )
         lastNightlyScoreDate = now
         _ui.update { it.copy(nightlyScore = score) }
@@ -232,13 +234,20 @@ class AppViewModel @Inject constructor(
 
     fun startSession(combo: Combo? = null, sleepTimerMinutes: Int? = null) {
         val c = combo ?: _ui.value.activeCombo ?: autoGenerateCombo()
-        _ui.update { it.copy(activeCombo = c) }
+        _ui.update { it.copy(activeCombo = c, errorMessage = null) }
         audioService.loadCombo(c)
+        if (audioService.errorMessage.value != null) {
+            _ui.update { it.copy(errorMessage = audioService.errorMessage.value) }
+            return
+        }
         val timer = sleepTimerMinutes
             ?: c.sleepTimerMinutes
             ?: _ui.value.profile?.sleepTimerDefault
         audioService.play(timer)
-        c.affirmationLayer.text.takeIf { it.isNotBlank() }?.let {
+        // Prefer live affirmation text, then daily cache
+        val script = c.affirmationLayer.text.takeIf { it.isNotBlank() }
+            ?: _ui.value.cachedAffirmation
+        script?.let {
             audioService.speakAffirmation(it, c.affirmationLayer.volume.toFloat())
         }
     }

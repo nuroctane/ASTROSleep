@@ -107,6 +107,8 @@ struct PlaybackView: View {
                         Button(action: {
                             if audioService.isPlaying {
                                 audioService.pause()
+                            } else if audioService.state == .stopped || audioService.state == .idle {
+                                audioService.play()
                             } else {
                                 audioService.resume()
                             }
@@ -140,6 +142,19 @@ struct PlaybackView: View {
             Task {
                 try? await audioService.loadCombo(combo)
                 audioService.play()
+                // Speak cached affirmation if present (was never wired).
+                if let script = appState.cachedAffirmation, !script.isEmpty {
+                    let voice = appState.profile?.selectedVoiceId ?? "female"
+                    let rate = appState.profile?.globalAffirmationSpeed ?? 1.0
+                    let pitch = appState.profile?.globalAffirmationPitch ?? 0.0
+                    audioService.speakAffirmation(
+                        script,
+                        voiceId: voice,
+                        volume: combo.affirmationLayer.volume,
+                        rate: rate,
+                        pitchSemitones: pitch
+                    )
+                }
             }
         }
         .onDisappear {
@@ -148,7 +163,7 @@ struct PlaybackView: View {
                duration > 60 {
                 let log = SessionLog(
                     date: Date(),
-                    intention: appState.cachedAffirmation ?? "",
+                    intention: "", // Intention is not the affirmation script
                     affirmationScript: appState.cachedAffirmation ?? "",
                     comboId: combo.id,
                     durationMinutes: Int(duration / 60),

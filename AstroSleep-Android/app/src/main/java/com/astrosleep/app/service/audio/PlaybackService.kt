@@ -13,8 +13,8 @@ import com.astrosleep.app.MainActivity
 import com.astrosleep.app.R
 
 /**
- * Foreground media playback service for screen-off ambient sessions.
- * MediaSession full wiring continues in polish; notification keeps process alive.
+ * Foreground service so ambient playback survives screen-off.
+ * Started/stopped by [AudioService].
  */
 class PlaybackService : Service() {
 
@@ -26,20 +26,30 @@ class PlaybackService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val open = PendingIntent.getActivity(
-            this,
-            0,
-            Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-        val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(getString(R.string.app_name))
-            .setContentText("Playing tonight's soundscape")
-            .setSmallIcon(android.R.drawable.ic_media_play)
-            .setContentIntent(open)
-            .setOngoing(true)
-            .build()
-        startForeground(NOTIFICATION_ID, notification)
+        when (intent?.action) {
+            ACTION_STOP -> {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
+                return START_NOT_STICKY
+            }
+            else -> {
+                val open = PendingIntent.getActivity(
+                    this,
+                    0,
+                    Intent(this, MainActivity::class.java),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+                val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setContentTitle(getString(R.string.app_name))
+                    .setContentText("Playing tonight's soundscape")
+                    .setSmallIcon(android.R.drawable.ic_media_play)
+                    .setContentIntent(open)
+                    .setOngoing(true)
+                    .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
+                    .build()
+                startForeground(NOTIFICATION_ID, notification)
+            }
+        }
         return START_STICKY
     }
 
@@ -55,6 +65,8 @@ class PlaybackService : Service() {
     }
 
     companion object {
+        const val ACTION_START = "com.astrosleep.app.playback.START"
+        const val ACTION_STOP = "com.astrosleep.app.playback.STOP"
         private const val CHANNEL_ID = "astrosleep_playback"
         private const val NOTIFICATION_ID = 42
     }

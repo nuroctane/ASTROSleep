@@ -4,18 +4,19 @@ import Combine
 
 // MARK: - Audio Service
 /// Multi-track audio engine with per-layer EQ, LFO oscillation, and background audio.
+/// Critical fixes: ambient looping, main-thread graph access, timer-off, voice gender, volume after fade.
+@MainActor
 final class AudioService: ObservableObject {
     static let shared = AudioService()
     
     @Published var state: AudioState = .idle
     @Published var masterVolume: Double = 1.0
     @Published var isPlaying: Bool = false
+    @Published var lastError: String?
     
     private var audioEngine: AVAudioEngine!
     private var mixer: AVAudioMixerNode!
     private var playerNodes: [UUID: AudioLayerNode] = [:]
-    private var affirmationPlayer: AVAudioPlayerNode?
-    private var displayLink: CADisplayLink?
     private var audioFiles: [String: AVAudioFile] = [:]
     
     private var sessionStartTime: Date?
@@ -25,7 +26,8 @@ final class AudioService: ObservableObject {
     private var lfoTimers: [UUID: Timer] = [:]
     private var fadeTimer: Timer?
     private var speechSynthesizer: AVSpeechSynthesizer?
-    private var cancellables = Set<AnyCancellable>()
+    private var volumeBeforeFade: Double = 1.0
+    private var shouldLoopLayers: Bool = true
     
     private init() {
         setupAudioSession()
@@ -34,8 +36,8 @@ final class AudioService: ObservableObject {
     }
     
     deinit {
-        stopAll()
-        cleanup()
+        // Avoid calling MainActor-isolated methods from deinit; best-effort cleanup
+        NotificationCenter.default.removeObserver(self)
     }
     
     // MARK: - Setup
@@ -46,15 +48,12 @@ final class AudioService: ObservableObject {
             try session.setCategory(.playback, mode: .default, options: [.mixWithOthers, .allowBluetoothA2DP, .allowBluetoothHFP])
             try session.setActive(true)
             
-            // Handle interruptions
             NotificationCenter.default.addObserver(
                 self,
                 selector: #selector(handleAudioInterruption),
                 name: AVAudioSession.interruptionNotification,
                 object: nil
             )
-            
-            // Handle route changes (headphones disconnect)
             NotificationCenter.default.addObserver(
                 self,
                 selector: #selector(handleRouteChange),
@@ -69,15 +68,9 @@ final class AudioService: ObservableObject {
     private func setupAudioEngine() {
         audioEngine = AVAudioEngine()
         mixer = AVAudioMixerNode()
-        
         audioEngine.attach(mixer)
-        
-        guard let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2) else {
-            print("Failed to create audio format")
-            return
-        }
+        let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2)
         audioEngine.connect(mixer, to: audioEngine.mainMixerNode, format: format)
-        
         do {
             try audioEngine.start()
         } catch {
@@ -85,51 +78,43 @@ final class AudioService: ObservableObject {
         }
     }
     
-    private func setupNotifications() {
-        // Setup any additional notification observers
-    }
+    private func setupNotifications() {}
     
     // MARK: - Layer Management
     
     func loadCombo(_ combo: Combo) async throws {
-        await MainActor.run { state = .loading }
-        
-        // Stop and cleanup existing layers
-        stopAll()
+        state = .loading
+        lastError = nil
+        stopAll(resetMasterVolume: false)
         cleanupLayers()
-        
-        guard let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2) else {
-            await MainActor.run { state = .idle }
-            throw AudioError.formatCreationFailed
+        if masterVolume < 0.05 {
+            masterVolume = max(0.05, volumeBeforeFade)
         }
         
-        // Build sound lookup for O(1) resolution
+        // Serial file loads (thread-safe) then attach graph
         let soundMap = Dictionary(
-            uniqueKeysWithValues: SoundLibrary.shared.sounds.map { ($0.id, $0) }
+            SoundLibrary.shared.sounds.map { ($0.id, $0) },
+            uniquingKeysWith: { first, _ in first }
         )
         
-        // Build audio graph and load files in parallel
-        await withTaskGroup(of: Void.self) { group in
-            for layer in combo.layers {
-                guard let sound = soundMap[layer.soundId] else { continue }
-                group.addTask {
-                    await self.loadAudioFile(for: sound)
-                }
-                
-                // Build audio graph on main thread
-                await MainActor.run {
-                    self.attachLayer(layer: layer, sound: sound, format: format)
-                }
+        for layer in combo.layers {
+            guard let sound = soundMap[layer.soundId] else { continue }
+            await loadAudioFile(for: sound)
+            if let file = audioFiles[sound.id] {
+                attachLayer(layer: layer, sound: sound, file: file)
             }
         }
         
-        // Setup affirmation if available
-        // (TTS handled separately via AVSpeechSynthesizer)
-        
-        await MainActor.run { state = .idle }
+        if playerNodes.isEmpty {
+            state = .idle
+            lastError = "No playable sounds loaded."
+            throw AudioError.fileLoadFailed
+        }
+        state = .idle
     }
     
-    private func attachLayer(layer: AmbientLayer, sound: Sound, format: AVAudioFormat) {
+    private func attachLayer(layer: AmbientLayer, sound: Sound, file: AVAudioFile) {
+        let format = file.processingFormat
         let playerNode = AVAudioPlayerNode()
         let eqNode = AVAudioUnitEQ(numberOfBands: 3)
         configureEQ(eqNode, with: layer.eq)
@@ -147,63 +132,49 @@ final class AudioService: ObservableObject {
         audioEngine.connect(timePitch, to: eqNode, format: format)
         audioEngine.connect(eqNode, to: mixer, format: format)
         
-        let layerNode = AudioLayerNode(
+        playerNodes[layer.id] = AudioLayerNode(
             id: layer.id,
             playerNode: playerNode,
             eqNode: eqNode,
             timePitchNode: timePitch,
             sound: sound,
             volume: layer.volume,
-            oscillation: layer.oscillation
+            oscillation: layer.oscillation,
+            audioFile: file
         )
-        
-        playerNodes[layer.id] = layerNode
     }
     
     private func loadAudioFile(for sound: Sound) async {
-        // Skip if already loaded
         if audioFiles[sound.id] != nil { return }
         
-        // Try local file first (bundle or Documents cache)
         if let localPath = sound.localPath,
            FileManager.default.fileExists(atPath: localPath) {
             let fileURL = URL(fileURLWithPath: localPath)
             do {
-                let audioFile = try AVAudioFile(forReading: fileURL)
-                audioFiles[sound.id] = audioFile
+                audioFiles[sound.id] = try AVAudioFile(forReading: fileURL)
             } catch {
                 print("[AudioService] Error loading '\(sound.name)': \(error)")
             }
             return
         }
         
-        // Download from CDN if not cached
         await downloadSound(sound)
     }
     
     private func downloadSound(_ sound: Sound) async {
         guard let url = URL(string: sound.cdnUrl) else { return }
-        
         do {
             let (data, response) = try await URLSession.shared.data(from: url)
-            
             guard let httpResponse = response as? HTTPURLResponse,
-                  httpResponse.statusCode == 200 else {
-                return
-            }
-            
-            // Save to local cache
+                  httpResponse.statusCode == 200 else { return }
             guard let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
                 return
             }
             let soundsDir = docs.appendingPathComponent("sounds", isDirectory: true)
             try? FileManager.default.createDirectory(at: soundsDir, withIntermediateDirectories: true)
-            
             let fileURL = soundsDir.appendingPathComponent("\(sound.id).m4a")
             try data.write(to: fileURL)
-            
-            let audioFile = try AVAudioFile(forReading: fileURL)
-            audioFiles[sound.id] = audioFile
+            audioFiles[sound.id] = try AVAudioFile(forReading: fileURL)
         } catch {
             print("Download error for \(sound.name): \(error)")
         }
@@ -211,16 +182,12 @@ final class AudioService: ObservableObject {
     
     private func configureEQ(_ eqNode: AVAudioUnitEQ, with profile: EQProfile) {
         let bands = eqNode.bands
-        
-        // Bass band (low shelf, ~100Hz)
         if bands.count > 0 {
             bands[0].filterType = .lowShelf
             bands[0].frequency = 100
-            bands[0].gain = Float((profile.bass - 0.5) * 24) // ±12dB
+            bands[0].gain = Float((profile.bass - 0.5) * 24)
             bands[0].bypass = false
         }
-        
-        // Mid band (parametric, ~1000Hz)
         if bands.count > 1 {
             bands[1].filterType = .parametric
             bands[1].frequency = 1000
@@ -228,8 +195,6 @@ final class AudioService: ObservableObject {
             bands[1].bandwidth = 1.0
             bands[1].bypass = false
         }
-        
-        // Treble band (high shelf, ~10000Hz)
         if bands.count > 2 {
             bands[2].filterType = .highShelf
             bands[2].frequency = 10000
@@ -241,168 +206,201 @@ final class AudioService: ObservableObject {
     // MARK: - Playback Control
     
     func play() {
-        guard !playerNodes.isEmpty else { return }
+        guard !playerNodes.isEmpty else {
+            lastError = "Nothing to play."
+            return
+        }
         
         if audioEngine.isRunning == false {
             do {
                 try audioEngine.start()
             } catch {
                 print("Engine start error: \(error)")
+                lastError = error.localizedDescription
                 return
             }
         }
         
-        for (_, layerNode) in playerNodes {
-            guard let audioFile = audioFiles[layerNode.sound.id] else { continue }
-            
-            layerNode.playerNode.stop()
-            layerNode.playerNode.scheduleFile(audioFile, at: nil, completionHandler: nil)
+        shouldLoopLayers = true
+        for (id, layerNode) in playerNodes {
+            scheduleLooping(layerId: id, layerNode: layerNode)
+            layerNode.playerNode.volume = Float(layerNode.volume * masterVolume)
             layerNode.playerNode.play()
             
-            // Set initial volume
-            layerNode.playerNode.volume = Float(layerNode.volume * masterVolume)
-            
-            // Start LFO if configured
             if let oscillation = layerNode.oscillation, oscillation.enabled {
-                startLFO(for: layerNode.id, config: oscillation)
+                startLFO(for: id, config: oscillation, baseVolume: layerNode.volume)
             }
         }
         
-        sessionStartTime = Date()
+        if sessionStartTime == nil {
+            sessionStartTime = Date()
+        }
         isPlaying = true
         state = .playing
         
-        // Start sleep timer if set
-        if let minutes = sleepTimerMinutes {
+        if let minutes = sleepTimerMinutes, minutes > 0 {
             startSleepTimer(minutes: minutes)
         }
     }
     
+    /// Schedule file and re-schedule on completion while looping is enabled.
+    private func scheduleLooping(layerId: UUID, layerNode: AudioLayerNode) {
+        guard let file = layerNode.audioFile else { return }
+        layerNode.playerNode.stop()
+        // Seek file to start for each schedule
+        file.framePosition = 0
+        layerNode.playerNode.scheduleFile(file, at: nil, completionHandler: { [weak self] in
+            Task { @MainActor in
+                guard let self = self else { return }
+                guard self.shouldLoopLayers, self.isPlaying,
+                      let node = self.playerNodes[layerId] else { return }
+                self.scheduleLooping(layerId: layerId, layerNode: node)
+                if !node.playerNode.isPlaying {
+                    node.playerNode.play()
+                }
+            }
+        })
+    }
+    
     func pause() {
+        shouldLoopLayers = false
         for (_, layerNode) in playerNodes {
             layerNode.playerNode.pause()
         }
-        
-        // Stop LFO timers
         for (_, timer) in lfoTimers {
             timer.invalidate()
         }
         lfoTimers.removeAll()
-        
         isPlaying = false
         state = .paused
     }
     
     func resume() {
+        if state == .stopped || playerNodes.isEmpty {
+            // Need full re-schedule after stop
+            play()
+            return
+        }
+        shouldLoopLayers = true
         if audioEngine.isRunning == false {
             try? audioEngine.start()
         }
-        
-        for (_, layerNode) in playerNodes {
+        for (id, layerNode) in playerNodes {
+            // If nothing is scheduled, re-schedule
+            if !layerNode.playerNode.isPlaying {
+                scheduleLooping(layerId: id, layerNode: layerNode)
+            }
             layerNode.playerNode.play()
-            
             if let oscillation = layerNode.oscillation, oscillation.enabled {
-                startLFO(for: layerNode.id, config: oscillation)
+                startLFO(for: id, config: oscillation, baseVolume: layerNode.volume)
             }
         }
-        
         isPlaying = true
         state = .playing
     }
     
-    func stopAll() {
+    func stopAll(resetMasterVolume: Bool = true) {
+        shouldLoopLayers = false
         for (_, layerNode) in playerNodes {
             layerNode.playerNode.stop()
         }
-        
-        // Stop all LFO timers
         for (_, timer) in lfoTimers {
             timer.invalidate()
         }
         lfoTimers.removeAll()
-        
-        // Stop sleep timer
         timer?.invalidate()
         timer = nil
-        
+        fadeTimer?.invalidate()
+        fadeTimer = nil
         isPlaying = false
         state = .stopped
+        if resetMasterVolume {
+            masterVolume = max(0.05, volumeBeforeFade)
+            updateVolumes()
+        }
     }
     
     func fadeOut(duration: TimeInterval = 60.0, completion: (() -> Void)? = nil) {
         state = .fading
         fadeTimer?.invalidate()
+        volumeBeforeFade = max(0.05, masterVolume)
         
         let startVolume = Float(masterVolume)
         let steps = 60
         let stepDuration = duration / Double(steps)
         let stepCounter = StepCounter()
         
-        fadeTimer = Timer.scheduledTimer(withTimeInterval: stepDuration, repeats: true) { [weak self] timer in
+        let t = Timer(timeInterval: stepDuration, repeats: true) { [weak self] timer in
             guard let self = self else {
                 timer.invalidate()
                 return
             }
-            
-            stepCounter.value += 1
-            let progress = Float(stepCounter.value) / Float(steps)
-            let newVolume = startVolume * (1.0 - progress)
-            
-            self.masterVolume = Double(newVolume)
-            self.updateVolumes()
-            
-            if stepCounter.value >= steps {
-                timer.invalidate()
-                self.fadeTimer = nil
-                self.stopAll()
-                completion?()
+            Task { @MainActor in
+                stepCounter.value += 1
+                let progress = Float(stepCounter.value) / Float(steps)
+                let newVolume = startVolume * (1.0 - progress)
+                self.masterVolume = Double(newVolume)
+                self.updateVolumes()
+                if stepCounter.value >= steps {
+                    timer.invalidate()
+                    self.fadeTimer = nil
+                    self.stopAll(resetMasterVolume: true)
+                    completion?()
+                }
             }
         }
+        RunLoop.main.add(t, forMode: .common)
+        fadeTimer = t
     }
     
     // MARK: - LFO Oscillation
     
-    private func startLFO(for layerId: UUID, config: OscillationConfig) {
+    private func startLFO(for layerId: UUID, config: OscillationConfig, baseVolume: Double) {
+        lfoTimers[layerId]?.invalidate()
         let period = config.periodSeconds
         let minVol = Float(config.minVolume)
         let maxVol = Float(config.maxVolume)
         let phaseOffset = config.phaseOffset
         let startTime = CACurrentMediaTime()
+        let base = Float(baseVolume)
         
-        let timer = Timer.scheduledTimer(withTimeInterval: 0.06, repeats: true) { [weak self] _ in
-            guard let self = self,
-                  let layerNode = self.playerNodes[layerId] else { return }
-            
-            let elapsed = CACurrentMediaTime() - startTime
-            let cyclePosition = fmod((elapsed / period) + phaseOffset, 1.0)
-            
-            let waveformValue: Float
-            switch config.waveform {
-            case .sine:
-                waveformValue = sin(Float(cyclePosition) * 2.0 * .pi)
-            case .triangle:
-                let t = Float(cyclePosition)
-                waveformValue = 4.0 * abs(t - 0.5) - 1.0
-            case .step:
-                waveformValue = cyclePosition < 0.5 ? -1.0 : 1.0
-            case .perlin:
-                // Simple noise approximation
-                let t = Float(cyclePosition)
-                waveformValue = sin(t * 6.28) * 0.5 + sin(t * 12.56) * 0.25 + sin(t * 25.12) * 0.125
+        let t = Timer(timeInterval: 0.06, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            Task { @MainActor in
+                guard let layerNode = self.playerNodes[layerId] else { return }
+                let elapsed = CACurrentMediaTime() - startTime
+                let cyclePosition = fmod((elapsed / period) + phaseOffset, 1.0)
+                
+                let waveformValue: Float
+                switch config.waveform {
+                case .sine:
+                    waveformValue = sin(Float(cyclePosition) * 2.0 * .pi)
+                case .triangle:
+                    let tt = Float(cyclePosition)
+                    waveformValue = 4.0 * abs(tt - 0.5) - 1.0
+                case .step:
+                    waveformValue = cyclePosition < 0.5 ? -1.0 : 1.0
+                case .perlin:
+                    let tt = Float(cyclePosition)
+                    waveformValue = sin(tt * 6.28) * 0.5 + sin(tt * 12.56) * 0.25 + sin(tt * 25.12) * 0.125
+                }
+                
+                let normalizedValue = (waveformValue + 1.0) / 2.0
+                let lfo = minVol + (maxVol - minVol) * normalizedValue
+                layerNode.playerNode.volume = base * lfo * Float(self.masterVolume)
             }
-            
-            let normalizedValue = (waveformValue + 1.0) / 2.0 // 0 to 1
-            let volume = minVol + (maxVol - minVol) * normalizedValue
-            layerNode.playerNode.volume = volume * Float(self.masterVolume)
         }
-        
-        lfoTimers[layerId] = timer
+        RunLoop.main.add(t, forMode: .common)
+        lfoTimers[layerId] = t
     }
     
     // MARK: - Volume Control
     
     func setMasterVolume(_ volume: Double) {
         masterVolume = max(0, min(1, volume))
+        if state != .fading {
+            volumeBeforeFade = masterVolume
+        }
         updateVolumes()
     }
     
@@ -426,7 +424,6 @@ final class AudioService: ObservableObject {
     private func updateVolumes() {
         for (_, layerNode) in playerNodes {
             let baseVolume = Float(layerNode.volume * masterVolume)
-            // Don't override if LFO is active (LFO updates volume directly)
             if layerNode.oscillation?.enabled != true {
                 layerNode.playerNode.volume = baseVolume
             }
@@ -436,6 +433,12 @@ final class AudioService: ObservableObject {
     // MARK: - Sleep Timer
     
     func setSleepTimer(minutes: Int) {
+        if minutes <= 0 {
+            sleepTimerMinutes = nil
+            timer?.invalidate()
+            timer = nil
+            return
+        }
         sleepTimerMinutes = minutes
         if isPlaying {
             startSleepTimer(minutes: minutes)
@@ -443,10 +446,19 @@ final class AudioService: ObservableObject {
     }
     
     private func startSleepTimer(minutes: Int) {
-        timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: TimeInterval(minutes * 60), repeats: false) { [weak self] _ in
-            self?.fadeOut(duration: 60.0)
+        guard minutes > 0 else {
+            timer?.invalidate()
+            timer = nil
+            return
         }
+        timer?.invalidate()
+        let t = Timer(timeInterval: TimeInterval(minutes * 60), repeats: false) { [weak self] _ in
+            Task { @MainActor in
+                self?.fadeOut(duration: 60.0)
+            }
+        }
+        RunLoop.main.add(t, forMode: .common)
+        timer = t
     }
     
     // MARK: - Affirmation TTS
@@ -457,62 +469,73 @@ final class AudioService: ObservableObject {
         }
         guard let synthesizer = speechSynthesizer else { return }
         
-        // Stop any ongoing speech
         if synthesizer.isSpeaking {
             synthesizer.stopSpeaking(at: .immediate)
         }
         
         let utterance = AVSpeechUtterance(string: text)
-        
-        // Use specific voice identifier if available (enables Siri voices and on-device voices)
         let voices = AVSpeechSynthesisVoice.speechVoices()
-        let preferredVoice = voices.first { $0.identifier == voiceId }
-            ?? voices.first { $0.name.contains(voiceId.lowercased().contains("male") ? "Male" : "Female") && $0.language.hasPrefix("en") }
-            ?? AVSpeechSynthesisVoice(language: "en-US")
-        utterance.voice = preferredVoice
-        
+        let lower = voiceId.lowercased()
+        let preferredVoice: AVSpeechSynthesisVoice?
+        if let exact = voices.first(where: { $0.identifier == voiceId }) {
+            preferredVoice = exact
+        } else if lower.contains("female") || lower == "female" {
+            preferredVoice = voices.first {
+                $0.language.hasPrefix("en") &&
+                ($0.name.localizedCaseInsensitiveContains("female") ||
+                 $0.identifier.localizedCaseInsensitiveContains("female") ||
+                 $0.identifier.localizedCaseInsensitiveContains("samantha") ||
+                 $0.identifier.localizedCaseInsensitiveContains("siri"))
+            }
+        } else if lower.contains("male") {
+            preferredVoice = voices.first {
+                $0.language.hasPrefix("en") &&
+                ($0.name.localizedCaseInsensitiveContains("male") ||
+                 $0.identifier.localizedCaseInsensitiveContains("male"))
+            }
+        } else {
+            preferredVoice = AVSpeechSynthesisVoice(language: "en-US")
+        }
+        utterance.voice = preferredVoice ?? AVSpeechSynthesisVoice(language: "en-US")
         utterance.volume = Float(volume * masterVolume)
-        utterance.rate = Float(rate * 0.4) // Subliminal speed
-        // Convert semitones to pitch multiplier: 12 semitones = octave = 2x
-        // pitchMultiplier 1.0 = no change. Each semitone = 2^(1/12) multiplier
+        utterance.rate = Float(rate * 0.4)
         utterance.pitchMultiplier = Float(pow(2.0, pitchSemitones / 12.0))
-        
         synthesizer.speak(utterance)
     }
     
     // MARK: - Interruption Handling
     
     @objc private func handleAudioInterruption(_ notification: Notification) {
-        guard let userInfo = notification.userInfo,
-              let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
-              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else { return }
-        
-        switch type {
-        case .began:
-            if isPlaying {
-                pause()
-                state = .interrupted
-            }
-        case .ended:
-            if let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt {
-                let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
-                if options.contains(.shouldResume) {
-                    resume()
+        Task { @MainActor in
+            guard let userInfo = notification.userInfo,
+                  let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+                  let type = AVAudioSession.InterruptionType(rawValue: typeValue) else { return }
+            
+            switch type {
+            case .began:
+                if isPlaying {
+                    pause()
+                    state = .interrupted
                 }
+            case .ended:
+                if let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt {
+                    let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
+                    if options.contains(.shouldResume) {
+                        resume()
+                    }
+                }
+            @unknown default:
+                break
             }
-        @unknown default:
-            break
         }
     }
     
     @objc private func handleRouteChange(_ notification: Notification) {
-        guard let userInfo = notification.userInfo,
-              let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
-              let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else { return }
-        
-        if reason == .oldDeviceUnavailable {
-            // Headphones disconnected - pause to prevent speaker bleed
-            if isPlaying {
+        Task { @MainActor in
+            guard let userInfo = notification.userInfo,
+                  let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
+                  let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else { return }
+            if reason == .oldDeviceUnavailable, isPlaying {
                 pause()
             }
         }
@@ -538,7 +561,6 @@ final class AudioService: ObservableObject {
         speechSynthesizer = nil
         cleanupLayers()
         audioEngine?.stop()
-        audioEngine = nil
         NotificationCenter.default.removeObserver(self)
     }
     
@@ -564,15 +586,12 @@ private struct AudioLayerNode {
     let sound: Sound
     var volume: Double
     var oscillation: OscillationConfig?
+    var audioFile: AVAudioFile?
 }
 
-// MARK: - Step Counter
-/// Reference-type counter for use in timer closures.
 private final class StepCounter {
     var value: Int = 0
 }
-
-// MARK: - Audio Errors
 
 enum AudioError: Error {
     case formatCreationFailed

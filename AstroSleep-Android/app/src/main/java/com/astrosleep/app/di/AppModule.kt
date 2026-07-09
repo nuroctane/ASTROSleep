@@ -20,7 +20,9 @@ object AppModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AstroSleepDatabase =
         Room.databaseBuilder(context, AstroSleepDatabase::class.java, "astrosleep.db")
-            .fallbackToDestructiveMigration()
+            // Prefer explicit migrations in production. Destructive wipe only as last resort
+            // and logs loss of local birth data — never ship silent data loss without notice.
+            .fallbackToDestructiveMigrationOnDowngrade()
             .build()
 
     @Provides

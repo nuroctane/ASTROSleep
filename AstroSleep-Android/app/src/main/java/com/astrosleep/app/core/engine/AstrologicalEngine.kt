@@ -46,14 +46,31 @@ class AstrologicalEngine @Inject constructor() {
         val year = cal.get(Calendar.YEAR)
         val month = cal.get(Calendar.MONTH) + 1
         val day = cal.get(Calendar.DAY_OF_MONTH)
-        val julianDay = julianDayFor(year, month, day)
 
-        val placements = Planet.entries.map { planet ->
+        // Merge birth time into fractional JD (was date-only).
+        var dayFraction = 0.5 // noon default when time unknown
+        val hasBirthTime = birthTimeEpochMs != null
+        if (birthTimeEpochMs != null) {
+            val tc = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                timeInMillis = birthTimeEpochMs
+            }
+            val h = tc.get(Calendar.HOUR_OF_DAY).toDouble()
+            val m = tc.get(Calendar.MINUTE).toDouble()
+            val s = tc.get(Calendar.SECOND).toDouble()
+            dayFraction = (h + m / 60.0 + s / 3600.0) / 24.0
+        }
+        val julianDay = julianDayFor(year, month, day) + dayFraction
+
+        var placements = Planet.entries.map { planet ->
             simplifiedPlanetaryPosition(planet, julianDay, lat, lng)
         }
 
-        val hasBirthTime = birthTimeEpochMs != null
         val ascendant = if (hasBirthTime) computeAscendant(julianDay, lat, lng) else null
+        if (ascendant != null) {
+            placements = placements.map { p ->
+                p.copy(house = houseFromLongitude(p.degree, ascendant))
+            }
+        }
         val aspects = computeAspects(placements)
         val stelliums = detectStelliums(placements)
 
@@ -177,7 +194,8 @@ class AstrologicalEngine @Inject constructor() {
     }
 
     fun calculateMoonPhase(dateEpochMs: Long): MoonPhase {
-        val knownNewMoonEpochMs = 946_684_800_000L // 2000-01-01 UTC (iOS: 946684800)
+        // Known new moon: 2000-01-06 18:14 UTC
+        val knownNewMoonEpochMs = 947_182_440_000L
         val secondsSinceNewMoon = (dateEpochMs - knownNewMoonEpochMs) / 1000.0
         val daysSinceNewMoon = secondsSinceNewMoon / 86400.0
         val phaseCycle = positiveMod(daysSinceNewMoon, synodicMonth) / synodicMonth
@@ -271,17 +289,21 @@ class AstrologicalEngine @Inject constructor() {
         return positiveMod(gmst + longitude + 360.0, 360.0)
     }
 
+    /** Equal 13-sign sectors (360/13). Pisces is reachable. */
     private fun signFromLongitude(longitude: Double): Sign {
-        val index = (longitude / 30.0).toInt() % 13
-        return Sign.entries[min(index, Sign.entries.lastIndex)]
+        val sector = 360.0 / Sign.entries.size
+        val lon = positiveMod(longitude, 360.0)
+        val index = min((lon / sector).toInt(), Sign.entries.lastIndex)
+        return Sign.entries[index]
     }
 
     private fun houseFromLongitude(longitude: Double, ascendant: Sign?): House? {
         val asc = ascendant ?: return null
-        val ascDegree = asc.index * 30.0
+        val sector = 360.0 / 13.0
+        val ascDegree = asc.index * sector
         val relativeDegree = positiveMod(longitude - ascDegree + 360.0, 360.0)
         val houseNumber = (relativeDegree / 30.0).toInt() + 1
-        return House.fromNumber(houseNumber)
+        return House.fromNumber(houseNumber.coerceIn(1, 12))
     }
 
     private fun computeAspects(placements: List<ChartPlacement>): List<AspectarianEntry> {
@@ -332,7 +354,7 @@ class AstrologicalEngine @Inject constructor() {
         currentLng: Double,
         useCurrentLocation: Boolean,
     ): List<Transit> {
-        val cal = Calendar.getInstance().apply { timeInMillis = dateEpochMs }
+        val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = dateEpochMs }
         val julianDay = julianDayFor(
             cal.get(Calendar.YEAR),
             cal.get(Calendar.MONTH) + 1,
@@ -383,7 +405,7 @@ class AstrologicalEngine @Inject constructor() {
         lat: Double,
         lng: Double,
     ): List<ChartPlacement> {
-        val cal = Calendar.getInstance().apply { timeInMillis = dateEpochMs }
+        val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = dateEpochMs }
         val julianDay = julianDayFor(
             cal.get(Calendar.YEAR),
             cal.get(Calendar.MONTH) + 1,

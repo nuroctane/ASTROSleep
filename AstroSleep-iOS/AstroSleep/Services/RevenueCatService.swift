@@ -51,9 +51,9 @@ final class RevenueCatService: ObservableObject {
         // let result = try await Purchases.shared.purchase(package: package.revenueCatPackage)
         // return result.customerInfo.entitlements[package.entitlementId]?.isActive == true
         
-        // Development fallback: simulate purchase
+        #if DEBUG
+        // DEBUG only — never ship simulated unlocks to production.
         try? await Task.sleep(nanoseconds: 1_000_000_000)
-        
         switch package.tier {
         case .subscription:
             currentTier = .subscription
@@ -62,12 +62,14 @@ final class RevenueCatService: ObservableObject {
         default:
             break
         }
-        
         try? await StorageService.shared.updateProfile { profile in
             profile.cachedTierDisplayOnly = package.tier
         }
-        
         return true
+        #else
+        error = "Purchases not configured. Connect RevenueCat SDK."
+        return false
+        #endif
     }
     
     func restorePurchases() async throws -> SubscriptionTier {

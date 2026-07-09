@@ -103,10 +103,12 @@ fun OnboardingScreen(
                         set(Calendar.SECOND, 0)
                         set(Calendar.MILLISECOND, 0)
                     }
+                    // Pass separate birth-time epoch only when hour/min provided (default 12:00 still used for JD fraction via engine noon fallback if null).
+                    val hasTime = hour.isNotBlank() && minute.isNotBlank()
                     onComplete(
                         name.ifBlank { "Dreamer" },
                         cal.timeInMillis,
-                        cal.timeInMillis,
+                        if (hasTime) cal.timeInMillis else null,
                         lat.toDoubleOrNull() ?: 0.0,
                         lng.toDoubleOrNull() ?: 0.0,
                         birthCity.ifBlank { "Unknown" },

@@ -131,13 +131,16 @@ final class AppState: ObservableObject {
             return // Use cached score for same calendar day
         }
         
+        // Prefer current location when enabled; otherwise birth place (never 0,0).
+        let transitLat = profile.useCurrentLocationForTransits ? profile.currentLat : profile.birthLat
+        let transitLng = profile.useCurrentLocationForTransits ? profile.currentLng : profile.birthLng
         let score = AstrologicalEngine.shared.calculateNightlyScore(
             baseScore: profile.baseScore,
             date: now,
             natalChart: chart,
-            currentLat: profile.currentLat,
-            currentLng: profile.currentLng,
-            useCurrentLocation: profile.useCurrentLocationForTransits
+            currentLat: transitLat,
+            currentLng: transitLng,
+            useCurrentLocation: true // always pass resolved coordinates
         )
         
         currentNightlyScore = score
@@ -156,10 +159,10 @@ final class AppState: ObservableObject {
             return cache.script
         }
         
-        // Generate new affirmation
-        guard let userId = AuthService.shared.currentUserId else {
-            return nil
-        }
+        // Prefer authenticated user id; fall back to stable local profile id for guest MVP.
+        let userId = AuthService.shared.currentUserId
+            ?? profile?.id
+            ?? "guest"
         
         do {
             let script = try await NetworkService.shared.generateAffirmation(
@@ -309,7 +312,7 @@ final class AppState: ObservableObject {
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone(identifier: "UTC")
+        formatter.timeZone = TimeZone.current
         return formatter.string(from: date)
     }
 }

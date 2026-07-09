@@ -14,7 +14,7 @@ struct Sound: Codable, Identifiable, Hashable, Equatable {
     
     /// Filename of the audio file bundled inside the app (e.g. "heavy_rain.m4a").
     /// When provided, the app plays from the bundle without downloading.
-    let bundleFilename: String? = nil
+    var bundleFilename: String?
     
     var displayName: String { name }
     
@@ -129,7 +129,7 @@ final class SoundLibrary {
     private init() {
         let loaded = SoundLibrary.loadFromManifest() ?? SoundLibrary.defaultSounds()
         self.sounds = loaded
-        self.soundById = Dictionary(uniqueKeysWithValues: loaded.map { ($0.id, $0) })
+        self.soundById = Dictionary(loaded.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
     
     /// O(1) sound lookup. Returns nil if ID not found.

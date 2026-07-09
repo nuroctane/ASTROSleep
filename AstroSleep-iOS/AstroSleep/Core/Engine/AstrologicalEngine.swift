@@ -28,40 +28,60 @@ final class AstrologicalEngine {
         lng: Double
     ) -> NatalChart {
         let calendar = Calendar(identifier: .gregorian)
-        let components = calendar.dateComponents([.year, .month, .day], from: birthDate)
+        var components = calendar.dateComponents([.year, .month, .day], from: birthDate)
+        // Merge birth time into fractional JD (was date-only — ignored hour/minute).
+        var dayFraction = 0.5 // noon default when time unknown
+        let hasBirthTime = birthTime != nil
+        if let birthTime {
+            let tc = calendar.dateComponents([.hour, .minute, .second], from: birthTime)
+            let h = Double(tc.hour ?? 12)
+            let m = Double(tc.minute ?? 0)
+            let s = Double(tc.second ?? 0)
+            dayFraction = (h + m / 60.0 + s / 3600.0) / 24.0
+            components.hour = tc.hour
+            components.minute = tc.minute
+        }
         
-        let julianDay = julianDayFor(year: components.year ?? 2000,
-                                      month: components.month ?? 1,
-                                      day: components.day ?? 1)
+        let julianDay = julianDayFor(
+            year: components.year ?? 2000,
+            month: components.month ?? 1,
+            day: components.day ?? 1
+        ) + dayFraction
         
-        // Simplified planetary position calculations
-        // In production, replace with Swiss Ephemeris WASM integration
-        let placements = Planet.allCases.map { planet -> ChartPlacement in
-            let position = simplifiedPlanetaryPosition(
+        var placements = Planet.allCases.map { planet -> ChartPlacement in
+            simplifiedPlanetaryPosition(
                 planet: planet,
                 julianDay: julianDay,
                 lat: lat,
                 lng: lng
             )
-            return position
         }
         
-        let hasBirthTime = birthTime != nil
         let ascendant = hasBirthTime ? computeAscendant(julianDay: julianDay, lat: lat, lng: lng) : nil
+        // Assign equal houses from ascendant when birth time known
+        if let asc = ascendant {
+            placements = placements.map { p in
+                let house = houseFromLongitude(p.degree, ascendant: asc)
+                return ChartPlacement(
+                    planet: p.planet,
+                    sign: p.sign,
+                    house: house,
+                    degree: p.degree,
+                    isRetrograde: p.isRetrograde
+                )
+            }
+        }
         
         let aspects = computeAspects(placements: placements)
         let stelliums = detectStelliums(placements: placements)
-        
-        let dominantElement = computeDominantElement(placements: placements)
-        let dominantModality = computeDominantModality(placements: placements)
         
         return NatalChart(
             computedAt: Date(),
             placements: placements,
             ascendant: ascendant,
-            mc: nil, // Simplified
-            dominantElement: dominantElement,
-            dominantModality: dominantModality,
+            mc: nil,
+            dominantElement: computeDominantElement(placements: placements),
+            dominantModality: computeDominantModality(placements: placements),
             aspects: aspects,
             stelliums: stelliums,
             hasBirthTime: hasBirthTime
@@ -188,9 +208,9 @@ final class AstrologicalEngine {
         let moonPhase = calculateMoonPhase(date: date)
         score += ElementVector.phaseDelta(moonPhase)
         
-        // Use current location for transits if available; fall back to birth location
-        let transitLat = useCurrentLocation ? currentLat : 0
-        let transitLng = useCurrentLocation ? currentLng : 0
+        // Callers pass resolved coordinates (birth or GPS). Prefer non-zero provided values.
+        let transitLat = currentLat
+        let transitLng = currentLng
         
         // Compute current placements once and reuse
         let currentPlacements = simplifiedCurrentPlacements(
@@ -246,10 +266,13 @@ final class AstrologicalEngine {
     // MARK: - Moon Phase Calculation
     
     func calculateMoonPhase(date: Date) -> MoonPhase {
-        let knownNewMoon = Date(timeIntervalSince1970: 946684800) // Jan 6, 2000
+        // Known new moon: 2000-01-06 18:14 UTC ≈ 947182440
+        let knownNewMoon = Date(timeIntervalSince1970: 947_182_440)
         let secondsSinceNewMoon = date.timeIntervalSince(knownNewMoon)
         let daysSinceNewMoon = secondsSinceNewMoon / 86400.0
-        let phaseCycle = daysSinceNewMoon.truncatingRemainder(dividingBy: synodicMonth) / synodicMonth
+        var rem = daysSinceNewMoon.truncatingRemainder(dividingBy: synodicMonth)
+        if rem < 0 { rem += synodicMonth }
+        let phaseCycle = rem / synodicMonth
         
         switch phaseCycle {
         case 0.0..<0.03, 0.97...1.0:
@@ -351,18 +374,22 @@ final class AstrologicalEngine {
         return positiveMod(gmst + longitude + 360.0, 360.0)
     }
     
+    /// Equal 13-sign sidereal sectors (360°/13). Pisces is reachable; Ophiuchus is a real sector.
     private func signFromLongitude(_ longitude: Double) -> Sign {
         let signs = Sign.allCases
-        let index = Int(longitude / 30.0) % 13
-        return signs[min(index, signs.count - 1)]
+        let sector = 360.0 / Double(signs.count) // ≈ 27.6923°
+        let lon = positiveMod(longitude, 360.0)
+        let index = min(Int(lon / sector), signs.count - 1)
+        return signs[index]
     }
     
     private func houseFromLongitude(_ longitude: Double, ascendant: Sign?) -> House? {
         guard let asc = ascendant else { return nil }
-        let ascDegree = Double(asc.index) * 30.0
+        let sector = 360.0 / 13.0
+        let ascDegree = Double(asc.index) * sector
         let relativeDegree = positiveMod(longitude - ascDegree + 360.0, 360.0)
-        let houseNumber = Int(relativeDegree / 30.0) + 1
-        return House(rawValue: houseNumber)
+        let houseNumber = Int(relativeDegree / 30.0) + 1 // 12 houses remain 30° equal house
+        return House(rawValue: min(max(houseNumber, 1), 12))
     }
     
     private func computeAspects(placements: [ChartPlacement]) -> [AspectarianEntry] {

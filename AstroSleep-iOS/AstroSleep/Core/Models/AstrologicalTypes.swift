@@ -148,16 +148,16 @@ enum Planet: String, CaseIterable, Codable, Identifiable {
         }
     }
     
-    /// Rulership in Modern scheme
+    /// Primary modern rulership (deterministic — never random).
     var rulingSign: Sign? {
         switch self {
         case .sun: return .leo
         case .moon: return .cancer
-        case .mercury: return [.gemini, .virgo].randomElement()
-        case .venus: return [.taurus, .libra].randomElement()
-        case .mars: return [.aries, .scorpio].randomElement()
-        case .jupiter: return [.sagittarius, .pisces].randomElement()
-        case .saturn: return [.capricorn, .aquarius].randomElement()
+        case .mercury: return .gemini
+        case .venus: return .taurus
+        case .mars: return .aries
+        case .jupiter: return .sagittarius
+        case .saturn: return .capricorn
         case .uranus: return .aquarius
         case .neptune: return .pisces
         case .pluto: return .scorpio
