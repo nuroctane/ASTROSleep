@@ -3,6 +3,8 @@
 Temporary intuitive mark: **crescent moon + night sky** (indigo on deep navy).  
 Safe to replace later — keep filenames stable where apps reference them.
 
+**Family design system:** see Obsidian `Building & Projects/DESIGN.md` (Digital Sea tokens, accent `#5856D6`, glass recipes). New UI should follow that doc so AstroSleep and future family products share optical identity.
+
 | File | Use |
 |------|-----|
 | `astrosleep-logo.png` | Master 1024×1024 |
