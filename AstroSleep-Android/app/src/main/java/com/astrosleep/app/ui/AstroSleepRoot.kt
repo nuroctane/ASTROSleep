@@ -2,6 +2,8 @@ package com.astrosleep.app.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.LibraryMusic
@@ -16,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -76,23 +79,30 @@ fun AstroSleepRoot(
                 }
             }
         },
-    ) { _ ->
-        when (state.selectedTab) {
-            0 -> TonightScreen(
-                state = state,
-                onGenerate = { viewModel.autoGenerateCombo() },
-                onPlay = { viewModel.startSession() },
-                onPause = { viewModel.pauseSession() },
-                onResume = { viewModel.resumeSession() },
-                onStop = { viewModel.stopSession() },
-            )
-            1 -> CosmicSystemsScreen()
-            2 -> SoundsScreen(viewModel = viewModel)
-            3 -> LibraryScreen()
-            else -> SettingsScreen(
-                state = state,
-                onRestore = { viewModel.restorePurchases() },
-            )
+    ) { padding ->
+        // Apply scaffold insets so content is not drawn under the nav bar
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+        ) {
+            when (state.selectedTab) {
+                0 -> TonightScreen(
+                    state = state,
+                    onGenerate = { viewModel.autoGenerateCombo() },
+                    onPlay = { viewModel.startSession() },
+                    onPause = { viewModel.pauseSession() },
+                    onResume = { viewModel.resumeSession() },
+                    onStop = { viewModel.stopSession() },
+                )
+                1 -> CosmicSystemsScreen()
+                2 -> SoundsScreen(viewModel = viewModel)
+                3 -> LibraryScreen()
+                else -> SettingsScreen(
+                    state = state,
+                    onRestore = { viewModel.restorePurchases() },
+                )
+            }
         }
     }
 

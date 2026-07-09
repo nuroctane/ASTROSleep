@@ -117,7 +117,7 @@ fun TonightScreen(
             } else {
                 Button(
                     onClick = {
-                        if (state.activeCombo == null) onGenerate()
+                        // startSession already auto-generates if no combo — do not race generate+play
                         onPlay()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = SeaAccent),
