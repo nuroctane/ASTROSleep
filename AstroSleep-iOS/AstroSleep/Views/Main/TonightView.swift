@@ -44,13 +44,22 @@ struct TonightView: View {
                 }
                 .padding(.horizontal, 20)
             }
+            .astroScrollEdgeAware()
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
+            .astroSystemGlassToolbar()
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Text("AstroSleep")
-                        .font(.title2)
-                        .fontWeight(.bold)
+                    HStack(spacing: 8) {
+                        Image("Logo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 28, height: 28)
+                            .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                        Text("AstroSleep")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                    }
                 }
             }
             .onAppear {
@@ -101,8 +110,7 @@ struct TonightView: View {
             Spacer()
         }
         .padding()
-        .background(Color(.secondarySystemBackground))
-        .cornerRadius(16)
+        .astroContentCard(cornerRadius: 16)
     }
     
     // MARK: - Recommendation
@@ -157,8 +165,7 @@ struct TonightView: View {
                             }
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(Color(.tertiarySystemBackground))
-                            .cornerRadius(8)
+                            .astroGlassChip(cornerRadius: 8)
                         }
                     }
                 }
@@ -178,8 +185,7 @@ struct TonightView: View {
                 }
             }
             .padding()
-            .background(Color(.secondarySystemBackground))
-            .cornerRadius(16)
+            .astroContentCard(cornerRadius: 16)
             .onTapGesture {
                 appState.activeCombo = combo
             }
@@ -219,9 +225,10 @@ struct TonightView: View {
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
             .padding()
-            .background(ThemeService.shared.accentColor)
-            .cornerRadius(14)
+            .background(ThemeService.shared.accentColor, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
+        .buttonStyle(.borderedProminent)
+        .tint(ThemeService.shared.accentColor)
         .disabled(isGeneratingAffirmation)
     }
     

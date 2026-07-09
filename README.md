@@ -16,7 +16,7 @@ AstroSleep is a dual-platform native app (iOS + Android) that:
 
 | Platform | Stack | Path |
 |----------|--------|------|
-| **iOS** | SwiftUI · MVVM · AVFoundation · Core Data | [`AstroSleep-iOS/`](AstroSleep-iOS/) |
+| **iOS** | SwiftUI · MVVM · AVFoundation · Core Data · **Liquid Glass (iOS 26)** | [`AstroSleep-iOS/`](AstroSleep-iOS/) |
 | **Android** | Kotlin · Jetpack Compose · Media3 · Room · Hilt | [`AstroSleep-Android/`](AstroSleep-Android/) |
 
 **Repo:** [github.com/nuroctane/ASTROSleep](https://github.com/nuroctane/ASTROSleep)
@@ -354,6 +354,7 @@ python AstroSleep-iOS/Sounds/validate_manifest.py
 | [CHANGELOG.md](documentation/CHANGELOG.md) | Version history (iOS-focused log) |
 | [BUGFIX_SPRINT_NOTES.md](documentation/BUGFIX_SPRINT_NOTES.md) | Critical fix sprint notes |
 | [iOS_GO_LIVE_CHECKLIST.md](documentation/iOS_GO_LIVE_CHECKLIST.md) | Shipping checklist |
+| [IOS_LIQUID_GLASS.md](documentation/IOS_LIQUID_GLASS.md) | iOS 26 Liquid Glass adoption |
 
 ---
 

@@ -329,8 +329,7 @@ struct SoundCard: View {
             }
         }
         .padding(8)
-        .background(Color(.systemBackground))
-        .cornerRadius(16)
+        .astroContentCard(cornerRadius: 16)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(Color(.separator), lineWidth: 0.5)

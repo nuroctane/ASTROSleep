@@ -24,6 +24,13 @@
     <key>LSRequiresIPhoneOS</key>
     <true/>
     
+    <!-- UI / Liquid Glass (iOS 26+)
+         Do NOT set UIDesignRequiresCompatibility=YES — that freezes the pre–Liquid Glass look.
+         Absence (or false) lets the system apply Liquid Glass when built with Xcode 26+ SDK.
+         Key is ignored when building for iOS 27+. -->
+    <key>UIDesignRequiresCompatibility</key>
+    <false/>
+    
     <!-- UI -->
     <key>UIApplicationSceneManifest</key>
     <dict>

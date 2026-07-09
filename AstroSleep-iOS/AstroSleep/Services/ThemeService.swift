@@ -60,13 +60,19 @@ final class ThemeService: ObservableObject {
             backgroundImage = nil
         }
         
-        // Apply UIAppearance proxies for native controls
+        // Tint only — do not force opaque bar backgrounds (fights Liquid Glass on iOS 26+).
         let uiColor = UIColor(theme.accentColor)
         UINavigationBar.appearance().tintColor = uiColor
         UITabBar.appearance().tintColor = uiColor
         UISwitch.appearance().onTintColor = uiColor
         UISlider.appearance().tintColor = uiColor
         UIRefreshControl.appearance().tintColor = uiColor
+        
+        if #available(iOS 26.0, *) {
+            // Keep bars translucent so system Liquid Glass can composite over content.
+            UINavigationBar.appearance().isTranslucent = true
+            UITabBar.appearance().isTranslucent = true
+        }
     }
     
     // MARK: - Image Handling

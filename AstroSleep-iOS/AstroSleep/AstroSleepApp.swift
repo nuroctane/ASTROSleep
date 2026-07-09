@@ -47,16 +47,31 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }
     
     private func configureAppearance() {
-        // Set navigation bar appearance for dark mode
-        let appearance = UINavigationBarAppearance()
-        appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor.systemBackground
-        appearance.titleTextAttributes = [.foregroundColor: UIColor.label]
-        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.label]
-        
-        UINavigationBar.appearance().standardAppearance = appearance
-        UINavigationBar.appearance().compactAppearance = appearance
-        UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        // Liquid Glass (iOS 26+): avoid opaque nav/tab chrome that overlays system glass.
+        // On iOS 26, transparent / default appearances let TabView + NavigationStack float in glass.
+        if #available(iOS 26.0, *) {
+            let nav = UINavigationBarAppearance()
+            nav.configureWithDefaultBackground() // system-managed material / glass
+            nav.titleTextAttributes = [.foregroundColor: UIColor.label]
+            nav.largeTitleTextAttributes = [.foregroundColor: UIColor.label]
+            UINavigationBar.appearance().standardAppearance = nav
+            UINavigationBar.appearance().compactAppearance = nav
+            UINavigationBar.appearance().scrollEdgeAppearance = nav
+            UINavigationBar.appearance().compactScrollEdgeAppearance = nav
+            
+            let tab = UITabBarAppearance()
+            tab.configureWithDefaultBackground()
+            UITabBar.appearance().standardAppearance = tab
+            UITabBar.appearance().scrollEdgeAppearance = tab
+        } else {
+            let appearance = UINavigationBarAppearance()
+            appearance.configureWithDefaultBackground()
+            appearance.titleTextAttributes = [.foregroundColor: UIColor.label]
+            appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.label]
+            UINavigationBar.appearance().standardAppearance = appearance
+            UINavigationBar.appearance().compactAppearance = appearance
+            UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        }
     }
 }
 

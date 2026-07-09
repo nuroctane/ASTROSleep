@@ -80,6 +80,8 @@ struct MainTabView: View {
                 .tag(TabSelection.settings)
         }
         .tint(ThemeService.shared.accentColor)
+        // iOS 26 Liquid Glass: floating tab bar minimizes while scrolling content.
+        .astroTabBarLiquidGlass()
         .onChange(of: selectedTab) { oldValue, newValue in
             appState.selectedTab = newValue
         }
@@ -104,8 +106,7 @@ struct LoadingOverlay: View {
                     .foregroundColor(.white)
             }
             .padding(24)
-            .background(.ultraThinMaterial)
-            .cornerRadius(16)
+            .astroGlassCard(cornerRadius: 20)
         }
     }
 }
@@ -136,8 +137,7 @@ struct ErrorBanner: View {
                 }
             }
             .padding()
-            .background(.ultraThinMaterial)
-            .cornerRadius(12)
+            .astroGlassCard(cornerRadius: 14)
             .padding(.horizontal)
             
             Spacer()

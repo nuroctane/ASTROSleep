@@ -21,12 +21,20 @@ struct PlaybackView: View {
     
     var body: some View {
         ZStack {
-            // Background
-            Color(.systemBackground)
-                .ignoresSafeArea()
+            // Layered night background — content scrolls under Liquid Glass chrome
+            LinearGradient(
+                colors: [
+                    Color(.systemBackground),
+                    Color.indigo.opacity(0.12),
+                    Color(.systemBackground)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
             
             VStack(spacing: 0) {
-                // Top Bar
+                // Top Bar (floating glass on iOS 26+)
                 HStack {
                     Button(action: {
                         audioService.pause()
@@ -35,6 +43,8 @@ struct PlaybackView: View {
                         Image(systemName: "chevron.down")
                             .font(.title2)
                             .foregroundColor(.primary)
+                            .frame(width: 40, height: 40)
+                            .astroGlassChip(cornerRadius: 20)
                     }
                     
                     Spacer()
@@ -49,10 +59,15 @@ struct PlaybackView: View {
                         Image(systemName: "timer")
                             .font(.title3)
                             .foregroundColor(.primary)
+                            .frame(width: 40, height: 40)
+                            .astroGlassChip(cornerRadius: 20)
                     }
                 }
                 .padding(.horizontal)
                 .padding(.top, 8)
+                .padding(.vertical, 6)
+                .astroGlassCard(cornerRadius: 20)
+                .padding(.horizontal, 12)
                 
                 // Main Visual
                 Spacer()

@@ -4,7 +4,8 @@ A native iOS sleep app with astrological personalization, AI-generated sublimina
 
 ## Architecture
 
-- **UI Framework**: SwiftUI 5.0+ (iOS 26+ SDK required for App Store submission)
+- **UI Framework**: SwiftUI (iOS 26+ SDK required for App Store submission)
+- **Design**: **Liquid Glass** adopted on iOS 26+ (`UIDesignRequiresCompatibility = false`; see `IOS_LIQUID_GLASS.md`)
 - **Architecture Pattern**: MVVM + Combine
 - **Audio Engine**: AVFoundation (AVAudioEngine, AVAudioPlayerNode, AVAudioUnitEQ, AVSpeechSynthesizer)
 - **Local Storage**: Core Data + Keychain (auth tokens)
