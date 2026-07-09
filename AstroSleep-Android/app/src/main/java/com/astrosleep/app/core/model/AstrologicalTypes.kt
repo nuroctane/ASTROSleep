@@ -344,4 +344,4 @@ enum class AudioState {
     IDLE, LOADING, PLAYING, PAUSED, INTERRUPTED, FADING, STOPPED
 }
 
-enum class TabSelection { TONIGHT, SOUNDS, LIBRARY, SETTINGS }
+enum class TabSelection { TONIGHT, COSMOS, SOUNDS, LIBRARY, SETTINGS }

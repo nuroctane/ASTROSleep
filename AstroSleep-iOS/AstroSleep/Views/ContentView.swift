@@ -60,6 +60,12 @@ struct MainTabView: View {
                     Label(TabSelection.tonight.rawValue, systemImage: TabSelection.tonight.icon)
                 }
                 .tag(TabSelection.tonight)
+
+            CosmicSystemsView()
+                .tabItem {
+                    Label(TabSelection.cosmos.rawValue, systemImage: TabSelection.cosmos.icon)
+                }
+                .tag(TabSelection.cosmos)
             
             SoundLibraryView()
                 .tabItem {

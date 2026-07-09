@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>AstroSleep · Cosmic Systems</title>
+  <style>
+    :root {
+      --sea-void: #070B14;
+      --sea-field: #0B1220;
+      --sea-surface: #121A2B;
+      --sea-text: #E8EEF8;
+      --sea-muted: #9AA8C0;
+      --sea-accent: #5856D6;
+      --sea-biolume: #5AC8FA;
+      --sea-border: #FFFFFF14;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: var(--sea-void); color: var(--sea-text); font-family: -apple-system, system-ui, sans-serif; }
+    #c { position: fixed; inset: 0; touch-action: none; }
+    .hud {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+      background: linear-gradient(transparent, rgba(7,11,20,0.92) 28%);
+      pointer-events: none;
+    }
+    .hud-inner { pointer-events: auto; max-width: 720px; margin: 0 auto; }
+    .title { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--sea-muted); margin-bottom: 8px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .chip {
+      border: 1px solid var(--sea-border);
+      background: color-mix(in srgb, var(--sea-surface) 80%, transparent);
+      color: var(--sea-text);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.2s ease, background 0.2s ease;
+    }
+    .chip.active {
+      border-color: var(--sea-accent);
+      background: #5856D633;
+      color: #fff;
+    }
+    .chip:active { transform: scale(0.98); }
+    .panel {
+      border: 1px solid var(--sea-border);
+      background: color-mix(in srgb, var(--sea-surface) 88%, transparent);
+      border-radius: 14px;
+      padding: 12px 14px;
+      min-height: 72px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .panel h2 { font-size: 15px; font-weight: 600; margin-bottom: 4px; color: #fff; }
+    .panel p { font-size: 13px; line-height: 1.45; color: var(--sea-muted); }
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0;
+      padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
+      display: flex; justify-content: space-between; align-items: center;
+      pointer-events: none;
+    }
+    .badge {
+      pointer-events: auto;
+      font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--sea-biolume);
+      border: 1px solid var(--sea-border);
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: rgba(18,26,43,0.7);
+    }
+    .loader {
+      position: fixed; inset: 0; display: grid; place-items: center;
+      background: var(--sea-void); z-index: 10; transition: opacity 0.4s ease;
+    }
+    .loader.hide { opacity: 0; pointer-events: none; }
+    .orb {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, var(--sea-biolume), var(--sea-accent) 55%, transparent 70%);
+      animation: pulse 1.4s ease-in-out infinite;
+      box-shadow: 0 0 32px #5856D666;
+    }
+    @keyframes pulse { 0%,100% { transform: scale(0.92); opacity: 0.85; } 50% { transform: scale(1.08); opacity: 1; } }
+  </style>
+</head>
+<body>
+  <div class="loader" id="loader"><div class="orb"></div></div>
+  <canvas id="c"></canvas>
+  <div class="topbar">
+    <div class="badge">Systems · not personal chart</div>
+    <div class="badge" id="bodyLabel">Earth</div>
+  </div>
+  <div class="hud">
+    <div class="hud-inner">
+      <div class="title">Astrological systems</div>
+      <div class="chips" id="chips"></div>
+      <div class="panel">
+        <h2 id="panelTitle">13-sign sidereal frame</h2>
+        <p id="panelBody">Explore the systems AstroSleep uses — not your personal natal dump. Tap chips for details; drag to orbit, pinch/scroll to zoom.</p>
+      </div>
+    </div>
+  </div>
+  <script src="vendor/three.min.js"></script>
+  <script>
+(function () {
+  const SYSTEMS = [
+    { id: 'zodiac', label: '13-sign', title: 'Zodiac 13 (Aspectarians)', body: 'Sidereal band with thirteen equal-ish sectors including Ophiuchus. Matches AstroSleep’s 13-sign model — not tropical 12-only.' },
+    { id: 'ayan', label: 'Sharatan', title: 'Sharatan ayanamsha (Beta Aries)', body: 'Custom Sharatan (Beta Aries) reference offset ≈ 02° Aries 15′. Birth longitudes are computed on-device; this tab only shows the system identity.' },
+    { id: 'frame', label: 'Topocentric', title: 'Topocentric frame', body: 'Positions are considered from the observer’s location on Earth, not the geocenter — the same frame family used in the chart standard.' },
+    { id: 'houses', label: 'Equal houses', title: 'Equal houses (Asc = 1st)', body: 'When a horizon is shown, houses are equal from the Ascendant. Decorative ring here; personal houses only appear if you opt into personal mode later.' },
+    { id: 'nodes', label: 'True Node', title: 'True Nodes', body: 'Node axis uses true lunar nodes (not mean). Shown as axis markers on the ecliptic ring.' },
+    { id: 'modern', label: 'Modern', title: 'Modern body set', body: 'Sun through Pluto plus modern points as the product allows. Body tour below focuses classical planets for clarity.' },
+  ];
+
+  const PLANETS = [
+    { name: 'Mercury', color: 0x888888, d: 18 },
+    { name: 'Venus', color: 0xe89c51, d: 24 },
+    { name: 'Earth', color: 0x4b759e, d: 32 },
+    { name: 'Mars', color: 0xc1440e, d: 40 },
+    { name: 'Jupiter', color: 0xc99b75, d: 52 },
+    { name: 'Saturn', color: 0xe3cb8f, d: 64 },
+    { name: 'Uranus', color: 0x82b3d1, d: 74 },
+    { name: 'Neptune', color: 0x274687, d: 84 },
+    { name: 'Pluto', color: 0x8B7355, d: 92 },
+  ];
+
+  const SIGNS = ['Ari','Tau','Gem','Can','Leo','Vir','Lib','Sco','Oph','Sag','Cap','Aqu','Pis'];
+
+  const chips = document.getElementById('chips');
+  const panelTitle = document.getElementById('panelTitle');
+  const panelBody = document.getElementById('panelBody');
+  const bodyLabel = document.getElementById('bodyLabel');
+  let activeSystem = 0;
+
+  SYSTEMS.forEach((s, i) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (i === 0 ? ' active' : '');
+    b.textContent = s.label;
+    b.onclick = () => {
+      activeSystem = i;
+      [...chips.children].forEach((c, j) => c.classList.toggle('active', j === i));
+      panelTitle.textContent = s.title;
+      panelBody.textContent = s.body;
+    };
+    chips.appendChild(b);
+  });
+
+  const canvas = document.getElementById('c');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x070B14, 1);
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x070B14, 0.012);
+
+  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 500);
+  camera.position.set(0, 28, 70);
+
+  const ambient = new THREE.AmbientLight(0x6a7aaa, 0.55);
+  scene.add(ambient);
+  const key = new THREE.DirectionalLight(0x9aa8ff, 1.1);
+  key.position.set(40, 60, 20);
+  scene.add(key);
+  const rim = new THREE.PointLight(0x5AC8FA, 1.2, 200);
+  rim.position.set(-30, 10, -20);
+  scene.add(rim);
+
+  // Star field
+  const starGeo = new THREE.BufferGeometry();
+  const starCount = 1800;
+  const positions = new Float32Array(starCount * 3);
+  for (let i = 0; i < starCount; i++) {
+    const r = 80 + Math.random() * 120;
+    const th = Math.random() * Math.PI * 2;
+    const ph = Math.acos(2 * Math.random() - 1);
+    positions[i * 3] = r * Math.sin(ph) * Math.cos(th);
+    positions[i * 3 + 1] = r * Math.sin(ph) * Math.sin(th);
+    positions[i * 3 + 2] = r * Math.cos(ph);
+  }
+  starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xc8d4ff, size: 0.35, sizeAttenuation: true })));
+
+  // Sun
+  const sun = new THREE.Mesh(
+    new THREE.SphereGeometry(4.5, 32, 32),
+    new THREE.MeshStandardMaterial({ color: 0xffd27a, emissive: 0xffaa33, emissiveIntensity: 0.85 })
+  );
+  scene.add(sun);
+  const sunGlow = new THREE.PointLight(0xffc266, 2.2, 150);
+  scene.add(sunGlow);
+
+  // Ecliptic / zodiac ring (13 sectors)
+  const ringGroup = new THREE.Group();
+  scene.add(ringGroup);
+  const ringR = 48;
+  for (let i = 0; i < 13; i++) {
+    const a0 = (i / 13) * Math.PI * 2;
+    const a1 = ((i + 1) / 13) * Math.PI * 2;
+    const pts = [];
+    for (let t = 0; t <= 12; t++) {
+      const a = a0 + (a1 - a0) * (t / 12);
+      pts.push(new THREE.Vector3(Math.cos(a) * ringR, 0, Math.sin(a) * ringR));
+    }
+    const g = new THREE.BufferGeometry().setFromPoints(pts);
+    const col = i === 8 ? 0x5856D6 : 0x2A3650; // Ophiuchus accent
+    ringGroup.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: col })));
+    // sector spoke
+    const spoke = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(Math.cos(a0) * ringR, 0, Math.sin(a0) * ringR),
+    ]);
+    ringGroup.add(new THREE.Line(spoke, new THREE.LineBasicMaterial({ color: 0x1A2438, transparent: true, opacity: 0.7 })));
+  }
+  // Equal house markers (12 ticks for decorative horizon language)
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    const m = new THREE.Mesh(
+      new THREE.SphereGeometry(0.35, 8, 8),
+      new THREE.MeshBasicMaterial({ color: 0x5AC8FA })
+    );
+    m.position.set(Math.cos(a) * (ringR + 2), 0.2, Math.sin(a) * (ringR + 2));
+    ringGroup.add(m);
+  }
+  // True node axis
+  const nodeAxis = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(-ringR - 4, 0, 0),
+    new THREE.Vector3(ringR + 4, 0, 0),
+  ]);
+  ringGroup.add(new THREE.Line(nodeAxis, new THREE.LineBasicMaterial({ color: 0x7D7AFF, transparent: true, opacity: 0.85 })));
+
+  const planetMeshes = [];
+  PLANETS.forEach((p, idx) => {
+    const mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(1.4 + idx * 0.08, 24, 24),
+      new THREE.MeshStandardMaterial({ color: p.color, roughness: 0.75, metalness: 0.1 })
+    );
+    const pivot = new THREE.Object3D();
+    pivot.userData = { dist: p.d, speed: 0.12 / (idx + 1), name: p.name, phase: Math.random() * Math.PI * 2 };
+    mesh.position.x = p.d;
+    pivot.add(mesh);
+    // orbit line
+    const curve = new THREE.EllipseCurve(0, 0, p.d, p.d, 0, Math.PI * 2, false, 0);
+    const pts = curve.getPoints(64).map(v => new THREE.Vector3(v.x, 0, v.y));
+    const og = new THREE.BufferGeometry().setFromPoints(pts);
+    scene.add(new THREE.Line(og, new THREE.LineBasicMaterial({ color: 0x1A2438 })));
+    scene.add(pivot);
+    planetMeshes.push(pivot);
+  });
+
+  // Interaction
+  let dragging = false, lastX = 0, lastY = 0;
+  let rotY = 0.35, rotX = 0.45, targetDist = 70;
+  let focusIndex = 2; // Earth
+
+  function onPointerDown(e) {
+    dragging = true;
+    lastX = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
+    lastY = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
+  }
+  function onPointerMove(e) {
+    if (!dragging) return;
+    const x = e.clientX ?? e.touches?.[0]?.clientX ?? lastX;
+    const y = e.clientY ?? e.touches?.[0]?.clientY ?? lastY;
+    rotY += (x - lastX) * 0.005;
+    rotX += (y - lastY) * 0.004;
+    rotX = Math.max(0.15, Math.min(1.2, rotX));
+    lastX = x; lastY = y;
+  }
+  function onPointerUp() { dragging = false; }
+  canvas.addEventListener('mousedown', onPointerDown);
+  canvas.addEventListener('mousemove', onPointerMove);
+  window.addEventListener('mouseup', onPointerUp);
+  canvas.addEventListener('touchstart', onPointerDown, { passive: true });
+  canvas.addEventListener('touchmove', onPointerMove, { passive: true });
+  canvas.addEventListener('touchend', onPointerUp);
+  canvas.addEventListener('wheel', (e) => {
+    targetDist = Math.max(28, Math.min(120, targetDist + e.deltaY * 0.05));
+  }, { passive: true });
+
+  canvas.addEventListener('click', () => {
+    focusIndex = (focusIndex + 1) % PLANETS.length;
+    bodyLabel.textContent = PLANETS[focusIndex].name;
+  });
+
+  function resize() {
+    const w = window.innerWidth, h = window.innerHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+  }
+  window.addEventListener('resize', resize);
+
+  const clock = new THREE.Clock();
+  function animate() {
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+    sun.rotation.y = t * 0.05;
+    ringGroup.rotation.y = t * 0.02;
+    planetMeshes.forEach((pivot) => {
+      const u = pivot.userData;
+      const a = u.phase + t * u.speed;
+      pivot.rotation.y = a;
+    });
+    // Camera orbit
+    const dist = targetDist;
+    camera.position.x = Math.sin(rotY) * Math.cos(rotX) * dist;
+    camera.position.y = Math.sin(rotX) * dist * 0.65 + 8;
+    camera.position.z = Math.cos(rotY) * Math.cos(rotX) * dist;
+    camera.lookAt(0, 0, 0);
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('load', () => {
+    setTimeout(() => document.getElementById('loader').classList.add('hide'), 400);
+  });
+  // If already loaded
+  if (document.readyState === 'complete') {
+    setTimeout(() => document.getElementById('loader').classList.add('hide'), 200);
+  }
+})();
+  </script>
+</body>
+</html>

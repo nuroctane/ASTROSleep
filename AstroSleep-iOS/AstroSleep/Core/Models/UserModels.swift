@@ -262,6 +262,7 @@ enum AppScreen: Hashable {
 
 enum TabSelection: String, CaseIterable {
     case tonight = "Tonight"
+    case cosmos = "Cosmos"
     case sounds = "Sounds"
     case library = "Library"
     case settings = "Settings"
@@ -269,6 +270,7 @@ enum TabSelection: String, CaseIterable {
     var icon: String {
         switch self {
         case .tonight: return "moon.fill"
+        case .cosmos: return "sparkles"
         case .sounds: return "waveform"
         case .library: return "rectangle.stack.fill"
         case .settings: return "gear"

@@ -7,17 +7,23 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
+// Digital Sea tokens — Building & Projects/DESIGN.md
 private val Accent = Color(0xFF5856D6)
-private val NightBg = Color(0xFF0B0B1A)
+private val Biolume = Color(0xFF5AC8FA)
+private val NightBg = Color(0xFF070B14)
+private val SeaField = Color(0xFF0B1220)
+private val SeaSurface = Color(0xFF121A2B)
 
 private val DarkColors = darkColorScheme(
     primary = Accent,
-    secondary = Color(0xFF7D7AFF),
+    secondary = Biolume,
     background = NightBg,
-    surface = Color(0xFF141428),
+    surface = SeaSurface,
+    surfaceVariant = SeaField,
     onPrimary = Color.White,
-    onBackground = Color(0xFFE8E8F0),
-    onSurface = Color(0xFFE8E8F0),
+    onBackground = Color(0xFFE8EEF8),
+    onSurface = Color(0xFFE8EEF8),
+    outline = Color(0xFF2A3650),
 )
 
 private val LightColors = lightColorScheme(

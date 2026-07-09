@@ -3,11 +3,11 @@ package com.astrosleep.app.ui
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Waves
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -17,11 +17,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.astrosleep.app.R
 import com.astrosleep.app.state.AppViewModel
+import com.astrosleep.app.ui.cosmos.CosmicSystemsScreen
 import com.astrosleep.app.ui.library.LibraryScreen
 import com.astrosleep.app.ui.onboarding.OnboardingScreen
 import com.astrosleep.app.ui.paywall.PaywallDialog
@@ -61,9 +61,10 @@ fun AstroSleepRoot(
             NavigationBar {
                 val tabs = listOf(
                     Triple(0, "Tonight", Icons.Default.NightsStay),
-                    Triple(1, "Sounds", Icons.Default.Waves),
-                    Triple(2, "Library", Icons.Default.LibraryMusic),
-                    Triple(3, "Settings", Icons.Default.Settings),
+                    Triple(1, "Cosmos", Icons.Default.AutoAwesome),
+                    Triple(2, "Sounds", Icons.Default.Waves),
+                    Triple(3, "Library", Icons.Default.LibraryMusic),
+                    Triple(4, "Settings", Icons.Default.Settings),
                 )
                 tabs.forEach { (index, label, icon) ->
                     NavigationBarItem(
@@ -85,8 +86,9 @@ fun AstroSleepRoot(
                 onResume = { viewModel.resumeSession() },
                 onStop = { viewModel.stopSession() },
             )
-            1 -> SoundsScreen(viewModel = viewModel)
-            2 -> LibraryScreen()
+            1 -> CosmicSystemsScreen()
+            2 -> SoundsScreen(viewModel = viewModel)
+            3 -> LibraryScreen()
             else -> SettingsScreen(
                 state = state,
                 onRestore = { viewModel.restorePurchases() },

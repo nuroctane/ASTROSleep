@@ -8,8 +8,9 @@ import Combine
 final class ThemeService: ObservableObject {
     static let shared = ThemeService()
     
-    @Published var accentColor: Color = .indigo
-    @Published var backgroundColor: Color = Color(.systemBackground)
+    /// Digital Sea accent (#5856D6) — see Building & Projects/DESIGN.md
+    @Published var accentColor: Color = Color(red: 0x58 / 255, green: 0x56 / 255, blue: 0xD6 / 255)
+    @Published var backgroundColor: Color = Color(red: 0x0B / 255, green: 0x12 / 255, blue: 0x20 / 255)
     @Published var backgroundImage: UIImage?
     @Published var useSystemAppearance: Bool = true
     
