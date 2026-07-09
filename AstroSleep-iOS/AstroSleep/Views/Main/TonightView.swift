@@ -44,6 +44,18 @@ struct TonightView: View {
                 }
                 .padding(.horizontal, 20)
             }
+            .background(
+                // Digital Sea void — lets Liquid Glass chrome float over content
+                LinearGradient(
+                    colors: [
+                        Color(red: 0x07 / 255, green: 0x0B / 255, blue: 0x14 / 255),
+                        Color(red: 0x0B / 255, green: 0x12 / 255, blue: 0x20 / 255),
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+            )
             .astroScrollEdgeAware()
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
@@ -227,8 +239,8 @@ struct TonightView: View {
             .padding()
             .background(ThemeService.shared.accentColor, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
-        .buttonStyle(.borderedProminent)
-        .tint(ThemeService.shared.accentColor)
+        // Instant press feedback (Apple / Emil: scale ~0.97 on active)
+        .buttonStyle(SeaPressButtonStyle())
         .disabled(isGeneratingAffirmation)
     }
     

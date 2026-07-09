@@ -106,3 +106,14 @@ enum AstroDesignSystem {
         if #available(iOS 26.0, *) { true } else { false }
     }
 }
+
+// MARK: - Press feedback (Apple / Emil craft)
+
+struct SeaPressButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .animation(.easeOut(duration: 0.14), value: configuration.isPressed)
+            .opacity(configuration.isPressed ? 0.92 : 1)
+    }
+}
