@@ -29,7 +29,7 @@ Source of truth for *which* systems to encode (labels match the sidereal chart s
 | Piece | Source | How we use it |
 |-------|--------|----------------|
 | 3D scene, camera fly, planet focus | [thebuggeddev/solar-system](https://github.com/thebuggeddev/solar-system) | Port patterns: Three.js planet rail, GSAP camera rig, fog, textures — **not** the Gemini AI Studio shell as a product dependency |
-| Brand / glass / motion | `Building & Projects/DESIGN.md` | Sea void background, biolume accents, quiet motion; optional liquid-glass hero only on marketing web |
+| Brand / glass / motion | `.agents/DESIGN.md` (family: Obsidian Building & Projects/DESIGN.md) | Sea void background, biolume accents, quiet motion; optional liquid-glass hero only on marketing web |
 | Glass native | `IOS_LIQUID_GLASS.md` | UI chrome around the scene, not the WebGL itself |
 
 ### Port strategy
@@ -65,7 +65,7 @@ Source of truth for *which* systems to encode (labels match the sidereal chart s
 ### Interactions
 
 - Drag orbit, pinch zoom, tap planet → focus (GSAP-like ease, 300–500ms).  
-- Hover/press on web: DESIGN.md ripple / lift.  
+- Hover/press on web: `.agents/DESIGN.md` ripple / lift.  
 - Loading: single Whimsy-style calm loader recolored to sea tokens.
 
 ## Data / engine wiring
@@ -103,4 +103,4 @@ Source of truth for *which* systems to encode (labels match the sidereal chart s
 
 - Chart systems sheet: `E:\Workstation\ASSETs\Image Assets\Personal\dd astro chart sidereal.jpeg`  
 - 3D baseline: https://github.com/thebuggeddev/solar-system  
-- Spec 4.0, DESIGN.md, TAG_ENGINE guides  
+- Spec 4.0, `.agents/DESIGN.md`, TAG_ENGINE guides  

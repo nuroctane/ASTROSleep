@@ -362,7 +362,7 @@ python AstroSleep-iOS/Sounds/validate_manifest.py
 
 ### Done / in progress (this cycle)
 
-- [x] **Digital Sea design system** — root `DESIGN.md`, Compose motion tokens (`SeaMotion`), iOS `SeaPressButtonStyle` + `seaEnter`, Liquid Glass adoption  
+- [x] **Digital Sea design system** — `.agents/DESIGN.md`, Compose motion tokens (`SeaMotion`), iOS `SeaPressButtonStyle` + `seaEnter`, Liquid Glass adoption  
 - [x] Android UX pass — glass cards, enter fades, settings auth shell, onboarding timezone field, paywall polish  
 - [x] **MediaStyle lockscreen** notification (Pause / Stop) + MediaSessionCompat shell on Android  
 - [x] Auth shell — encrypted local id + email identity; Supabase-ready hook when keys set  

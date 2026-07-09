@@ -109,7 +109,7 @@ enum AstroDesignSystem {
 
 // MARK: - Press feedback (Apple / Emil craft)
 
-/// Motion tokens — DESIGN.md / emilkowalski/skills
+/// Motion tokens — .agents/DESIGN.md / emilkowalski/skills
 enum SeaMotion {
     static let pressDuration: Double = 0.14
     static let uiDuration: Double = 0.20

@@ -19,7 +19,7 @@ import android.provider.Settings
 
 /**
  * Emil / Apple motion tokens for Compose.
- * SoT: repo DESIGN.md · emilkowalski/skills (emil-design-eng + apple-design)
+ * SoT: .agents/DESIGN.md · emilkowalski/skills (emil-design-eng + apple-design)
  */
 object SeaMotion {
     /** Strong ease-out — instant feedback, soft landing. */

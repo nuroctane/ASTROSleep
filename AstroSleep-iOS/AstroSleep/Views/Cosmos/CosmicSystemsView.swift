@@ -3,7 +3,7 @@ import WebKit
 
 // MARK: - Cosmic Systems Tab
 /// Offline WebView hosting the shared Three.js systems sky (not personal natal dump).
-/// Spec: documentation/COSMIC_SYSTEMS_3D_TAB.md · DESIGN.md Digital Sea.
+/// Spec: documentation/COSMIC_SYSTEMS_3D_TAB.md · .agents/DESIGN.md Digital Sea.
 ///
 /// **Xcode:** add `Resources/cosmic-systems` folder to the app target
 /// (File Inspector → Target Membership, or Copy Bundle Resources).

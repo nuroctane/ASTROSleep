@@ -7,7 +7,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-// Digital Sea tokens — repo DESIGN.md / emilkowalski/skills
+// Digital Sea tokens — .agents/DESIGN.md / emilkowalski/skills
 // Public Sea* colors live in SeaSurfaces.kt; keep scheme locals private-prefixed.
 private val Accent = Color(0xFF5856D6)
 private val Biolume = Color(0xFF5AC8FA)

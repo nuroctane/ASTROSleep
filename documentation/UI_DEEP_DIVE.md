@@ -9,7 +9,7 @@
 | **Apple Adopting Liquid Glass** (WWDC / docs) | Native iOS 26 glass, no opaque chrome | AstroSleep iOS (already wired) |
 | **liquidglass-oss** | Real WebGL glass for web heroes | Marketing / blackjack glass |
 | **lucide-animated** | Micro icon motion without noise | Settings / chrome icons |
-| **VoltAgent/awesome-design-md** | Drop-in DESIGN.md systems | Keep `Building & Projects/DESIGN.md` as family SoT |
+| **VoltAgent/awesome-design-md** | Drop-in DESIGN.md systems | Keep `.agents/DESIGN.md` as repo SoT (Obsidian family mirror OK) |
 | **Refero Styles** | Design systems for agents | Token validation |
 | **Design Spells** (bookmark) | Micro-details that feel magical | Odds panel, chips |
 
