@@ -349,6 +349,17 @@ Covers:
 python AstroSleep-iOS/Sounds/validate_manifest.py
 ```
 
+### Cross-platform parity (drift guard)
+
+The lockstep rules (shared `cosmic-systems` copies, duplicated sound manifest,
+identical tag-dimension weights across Swift / Kotlin / Python, exactly one
+iOS privacy manifest + entitlements) are executable, not honor-system:
+
+```bash
+python tools/check_parity.py   # verify: CI runs this on every push/PR
+python tools/sync_shared.py    # heal: push shared/ sources into platform copies
+```
+
 ---
 
 ## Documentation index
