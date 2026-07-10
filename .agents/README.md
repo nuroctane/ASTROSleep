@@ -9,8 +9,7 @@ Everything else (DESIGN, bug reviews, architecture notes, memory, skills) goes u
 |------|---------|
 | `skills/` | Agent skills (emil-design-eng, apple-design, …) |
 | `memory/` | Persistent agent memory / AGENTS.md |
-| `docs/` | Architecture & implementation notes |
-| `reviews/` | Bug reviews and audit writeups |
+| `reviews/` | Bug reviews, audit writeups, and `STATUS.md` (resolution ledger) |
 | `DESIGN.md` | Design system SoT (when present) |
 
 ---
@@ -23,4 +22,7 @@ Everything else (DESIGN, bug reviews, architecture notes, memory, skills) goes u
 | `skills/` | Project-local skills / skill packs for agents |
 
 Keep secrets out of this tree.
+
+**Reviews are immutable snapshots.** Current item status lives in
+`reviews/STATUS.md`; consult it before acting on any review document.
 
