@@ -1,5 +1,24 @@
 # AstroSleep Changelog
 
+## [Unreleased] — 2026-07-09/10 (repo hygiene · parity · CI)
+
+### Added
+- **`tools/check_parity.py`** — executable lockstep guard: cosmic-systems copies, dual sound manifests, 12 tag-dimension weights (Swift/Kotlin/Python), exactly one iOS privacy manifest + entitlements
+- **`tools/sync_shared.py`** — one-way sync from `shared/cosmic-systems/` and iOS sound manifest into platform copies
+- **GitHub Actions CI** (`.github/workflows/ci.yml`) — Android unit tests, manifest validation, parity guard on every push/PR to `main`
+- **Root `LICENSE`** — proprietary all-rights-reserved; vendored Three.js keeps its own license
+- **`.agents/reviews/STATUS.md`** — review resolution ledger (reviews are immutable snapshots)
+
+### Fixed / hardened
+- **iOS privacy manifest consolidation** — single canonical `Resources/PrivacyInfo.xcprivacy`; removed divergent root duplicate; `NSPrivacyTrackingDomains` emptied (functional `api.`/`cdn.` endpoints must never be listed while not tracking); declares EmailAddress, UserID, PurchaseHistory only
+- **iOS entitlements consolidation** — single canonical `Supporting Files/AstroSleep.entitlements`; deferred app-groups + iCloud until features exist; dropped invalid in-app-purchase entitlement key
+- **Three.js pin** — r160 + sha256 recorded in `shared/cosmic-systems/README.md`
+
+### Docs
+- Root README: CI badge, tools, privacy singletons, roadmap ledger items
+- Platform READMEs + go-live checklist §3.12–3.14
+- Obsidian product spec bumped to **5.3**
+
 ## [v3.2.0] — 2026-05-12
 
 ### Changed

@@ -20,9 +20,8 @@ A native iOS sleep app with astrological personalization, AI-generated sublimina
 ```
 AstroSleep/
 ├── App/
-│   ├── AstroSleepApp.swift       # App entry point
-│   ├── AppState.swift            # Central app state (MVVM)
-│   └── SceneDelegate.swift       # Scene lifecycle
+│   └── AppState.swift            # Central app state (MVVM)
+├── AstroSleepApp.swift           # App entry point
 ├── Core/
 │   ├── Models/
 │   │   ├── AstrologicalTypes.swift   # Enums: Element, Sign, Planet, Aspect, etc.
@@ -31,43 +30,44 @@ AstroSleep/
 │   │   └── UserModels.swift          # UserProfile, Combo, SessionLog
 │   └── Engine/
 │       ├── AstrologicalEngine.swift  # Natal chart, transit scoring, base score
-│       └── TagEngine.swift           # 12-dimensional archetypal scoring
+│       ├── TagEngine.swift           # Tag Engine v4 multi-factor ranking
+│       ├── PersonalSoundProfile.swift
+│       ├── TagAffinityTables.swift
+│       └── ComboComposer.swift       # Role-based layer seats
 ├── Services/
 │   ├── AudioService.swift        # Multi-track AVFoundation playback, LFO, EQ
 │   ├── StorageService.swift      # Core Data persistence
 │   ├── AuthService.swift         # Supabase auth + Apple Sign-In
 │   ├── NetworkService.swift      # AI proxy + CDN calls
-│   ├── RevenueCatService.swift   # Subscription management
+│   ├── RevenueCatService.swift   # Subscription management (DEBUG simulate gated)
 │   └── NotificationService.swift # Bedtime reminders
 ├── Views/
 │   ├── ContentView.swift         # Root navigation container
-│   ├── Onboarding/
-│   │   └── OnboardingFlowView.swift
-│   ├── Main/
-│   │   └── TonightView.swift     # Home screen
-│   ├── Playback/
-│   │   └── PlaybackView.swift    # Full-screen session player
-│   ├── Sounds/
-│   │   ├── SoundLibraryView.swift
-│   │   └── ComboBuilderView.swift
-│   ├── Library/
-│   │   └── PlaylistLibraryView.swift
-│   ├── Settings/
-│   │   └── SettingsView.swift
-│   └── Common/
-│       └── PaywallView.swift
-├── Sounds/
-│   ├── sounds_manifest.json      # Runtime sound catalog (24 sounds + tags)
-│   ├── validate_manifest.py      # CI validation script
-│   ├── README.md                 # Sound library documentation
-│   └── *.m4a                     # Bundled audio assets (optional)
+│   ├── Onboarding/OnboardingFlowView.swift
+│   ├── Main/TonightView.swift
+│   ├── Playback/PlaybackView.swift
+│   ├── Sounds/{SoundLibraryView,ComboBuilderView}.swift
+│   ├── Library/PlaylistLibraryView.swift
+│   ├── Cosmos/CosmicSystemsView.swift
+│   ├── Settings/SettingsView.swift
+│   └── Common/{PaywallView,LiquidGlassSupport}.swift
 ├── Resources/
-│   ├── CoreDataModel.xcdatamodeld/   # Core Data schema
-│   └── PrivacyInfo.xcprivacy         # Apple privacy manifest (required)
+│   ├── CoreDataModel.xcdatamodeld/
+│   ├── Assets.xcassets/
+│   ├── PrivacyInfo.xcprivacy     # CANONICAL — exactly one in the iOS tree
+│   └── cosmic-systems/           # Bundled Three.js sky (synced from shared/)
 └── Supporting Files/
     ├── Info.plist
-    └── AstroSleep.entitlements
+    └── AstroSleep.entitlements   # CANONICAL — exactly one in the iOS tree
+
+# Sibling (repo root, not inside the Xcode target folder):
+AstroSleep-iOS/Sounds/
+├── sounds_manifest.json          # Runtime sound catalog
+└── validate_manifest.py          # CI validation script
 ```
+
+**Singleton invariant:** never add a second `PrivacyInfo.xcprivacy` or `.entitlements`.
+`tools/check_parity.py` (and CI) fail if either count ≠ 1.
 
 ## Setup Instructions
 
@@ -91,20 +91,22 @@ AstroSleep/
 
 Add via `File > Add Package Dependencies`:
 
-- **RevenueCat**: `https://github.com/RevenueCat/purchases-ios` (v4+)
-- **PostHog**: `https://github.com/PostHog/posthog-ios` (v3+)
-- **Sentry**: `https://github.com/getsentry/sentry-cocoa` (v8+)
-- **Supabase Swift**: `https://github.com/supabase/supabase-swift`
+- **RevenueCat**: `https://github.com/RevenueCat/purchases-ios` (v4+) — required for production purchases
+- **Supabase Swift**: `https://github.com/supabase/supabase-swift` — auth
+
+**Deferred until code ships** (do not declare in privacy manifest early):
+
+- PostHog / Sentry — not in source yet; add SPM + `CrashData` / `ProductInteraction` declarations only when wired
 
 ### 4. Configure Capabilities
 
-In Xcode, select the target → Signing & Capabilities → + Capability:
+In Xcode, select the target → Signing & Capabilities → + Capability (match **canonical** `Supporting Files/AstroSleep.entitlements`):
 
-- [x] **Push Notifications**
-- [x] **Background Modes**: Audio, Background fetch, Remote notifications
+- [x] **Push Notifications** (`aps-environment`; keep `development` in source — export rewrites production)
+- [x] **Background Modes**: Audio (critical for sleep sessions)
 - [x] **Sign in with Apple**
-- [x] **iCloud**: CloudKit (for Pro tier backup)
 - [x] **Associated Domains**: `applinks:astrosleep.app`
+- [ ] **App Groups / iCloud CloudKit** — deferred until widgets / Pro backup exist (do not enable early)
 
 ### 5. Required Configuration
 

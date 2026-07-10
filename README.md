@@ -41,6 +41,7 @@ AstroSleep is a dual-platform native app (iOS + Android) that:
 - [Security & privacy](#security--privacy)
 - [Subscriptions](#subscriptions)
 - [Testing](#testing)
+- [CI](#ci)
 - [Documentation index](#documentation-index)
 - [Roadmap](#roadmap)
 - [License](#license)
@@ -96,17 +97,26 @@ Playback (multi-track ambient + optional TTS affirmation)
 ```
 ASTROSleep/
 ├── README.md                          ← you are here
+├── LICENSE                            # Proprietary all-rights-reserved
 ├── branding/                          # Constellation Field logo masters
 │   ├── astrosleep-logo.png            # 1024 master
 │   └── README.md
 ├── .agents/
-│   └── DESIGN.md                      # Digital Sea design system (agent SoT)
+│   ├── DESIGN.md                      # Digital Sea design system (agent SoT)
+│   └── reviews/STATUS.md              # Review resolution ledger (immutable reviews)
+├── .github/workflows/ci.yml           # Android tests · manifest · parity guard
+├── tools/
+│   ├── check_parity.py                # Lockstep verifier (CI)
+│   └── sync_shared.py                 # Push shared/ → platform copies
 ├── .gitignore
 ├── AstroSleep-iOS/                    # Native iOS app
-│   ├── AstroSleep/                    # Swift sources, Core Data, entitlements
-│   │   └── Resources/
-│   │       ├── Assets.xcassets        # AppIcon + Logo imageset
-│   │       └── cosmic-systems/        # Bundled 3D sky (iOS target)
+│   ├── AstroSleep/                    # Swift sources, Core Data
+│   │   ├── Resources/
+│   │   │   ├── Assets.xcassets        # AppIcon + Logo imageset
+│   │   │   ├── PrivacyInfo.xcprivacy  # CANONICAL privacy manifest (exactly one)
+│   │   │   └── cosmic-systems/        # Bundled 3D sky (iOS target)
+│   │   └── Supporting Files/
+│   │       └── AstroSleep.entitlements  # CANONICAL entitlements (exactly one)
 │   └── Sounds/                        # sounds_manifest.json + validate_manifest.py
 ├── AstroSleep-Android/                # Native Android app
 │   ├── app/                           # Gradle module (Compose UI, engines, services)
@@ -116,7 +126,7 @@ ASTROSleep/
 │   ├── gradle/
 │   └── README.md
 ├── shared/
-│   └── cosmic-systems/                # Source Three.js sky (copy into platforms)
+│   └── cosmic-systems/                # Source Three.js sky (sync via tools/)
 ├── documentation/                     # Specs, guides, checklists
 ├── testing/
 │   └── astrosleep-preview/            # HTML preview / experimental UI
@@ -304,10 +314,15 @@ Central readers: `AppConfig.swift` / `AppConfig.kt`.
 | HTTPS / cleartext disabled | ✅ |
 | AI proxy rate limit + controlled system prompt | ✅ (server-side) |
 | Analytics without birth/geo PII | ✅ policy |
+| iOS privacy manifest | ✅ **exactly one** file: `Resources/PrivacyInfo.xcprivacy` |
+| iOS entitlements | ✅ **exactly one** file: `Supporting Files/AstroSleep.entitlements` |
+| `NSPrivacyTrackingDomains` empty while not tracking | ✅ functional endpoints must not be listed |
 | iOS RevenueCat purchase simulation | **DEBUG builds only** |
 | Generative AI App Store disclosure | Required for iOS shipping |
 
 **Do not** claim medical treatment of insomnia/anxiety in store copy — position as sleep wellness / mindfulness.
+
+**iOS App Store declaration invariant:** never add a second `PrivacyInfo.xcprivacy` or `.entitlements` under `AstroSleep-iOS/`. CI (`tools/check_parity.py`) fails the build if either count ≠ 1.
 
 ---
 
@@ -362,6 +377,22 @@ python tools/check_parity.py   # verify: CI runs this on every push/PR
 python tools/sync_shared.py    # heal: push shared/ sources into platform copies
 ```
 
+After editing anything under `shared/cosmic-systems/` or the iOS sound manifest, run **sync then parity** — do not hand-copy platform trees.
+
+---
+
+## CI
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push/PR to `main`:
+
+| Job | What it runs |
+|-----|----------------|
+| **Android tests** | `./gradlew :app:testDebugUnitTest` (ElementVector, Astro engine, TagEngine v4, fingerprint goldens) |
+| **Manifest** | `python AstroSleep-iOS/Sounds/validate_manifest.py --compute-scores` |
+| **Parity** | `python tools/check_parity.py` (cosmic copies, manifest copies, 12 dimension weights, iOS singletons) |
+
+Badge: see the CI shield under the masthead.
+
 ---
 
 ## Documentation index
@@ -369,6 +400,7 @@ python tools/sync_shared.py    # heal: push shared/ sources into platform copies
 | Doc | Description |
 |-----|-------------|
 | [`.agents/DESIGN.md`](.agents/DESIGN.md) | Digital Sea design system (colors, glass, motion) |
+| [`.agents/reviews/STATUS.md`](.agents/reviews/STATUS.md) | Review resolution ledger (current status; reviews are immutable) |
 | [`branding/README.md`](branding/README.md) | Logo assets + app wiring |
 | [AstroSleep-iOS_README.md](documentation/AstroSleep-iOS_README.md) | iOS architecture, setup, security checklist |
 | [ANDROID_PORT_PLAN.md](documentation/ANDROID_PORT_PLAN.md) | Android port phases & stack map |
@@ -383,8 +415,10 @@ python tools/sync_shared.py    # heal: push shared/ sources into platform copies
 | [CHANGELOG.md](documentation/CHANGELOG.md) | Version history |
 | [BUGFIX_SPRINT_NOTES.md](documentation/BUGFIX_SPRINT_NOTES.md) | Critical fix sprint notes |
 | [BUG_REVIEW.md](documentation/BUG_REVIEW.md) | Bug review notes |
-| [iOS_GO_LIVE_CHECKLIST.md](documentation/iOS_GO_LIVE_CHECKLIST.md) | Shipping checklist |
-| [`shared/cosmic-systems/README.md`](shared/cosmic-systems/README.md) | Shared Three.js sky copy recipe |
+| [iOS_GO_LIVE_CHECKLIST.md](documentation/iOS_GO_LIVE_CHECKLIST.md) | Shipping checklist (privacy/entitlements singletons §3.12–3.14) |
+| [`shared/cosmic-systems/README.md`](shared/cosmic-systems/README.md) | Shared Three.js sky + sync recipe (r160 pin) |
+| [`tools/check_parity.py`](tools/check_parity.py) | Cross-platform lockstep guard |
+| [`tools/sync_shared.py`](tools/sync_shared.py) | Shared-asset one-way sync |
 
 ---
 
@@ -402,12 +436,19 @@ python tools/sync_shared.py    # heal: push shared/ sources into platform copies
 - [x] Affirmation pipeline wired on Android Begin + `user_id` API parity  
 - [x] Full UTC JD for nightly/transit sky (Android + iOS)  
 - [x] Cosmic Systems shared assets + platform WebViews  
+- [x] **Privacy/entitlements consolidation** — single canonical iOS files; empty tracking domains  
+- [x] **Parity guard + shared sync** — `tools/check_parity.py`, `tools/sync_shared.py`  
+- [x] **GitHub Actions CI** — Android unit tests, manifest validation, parity  
+- [x] **Root LICENSE** + review resolution ledger (`.agents/reviews/STATUS.md`)  
+- [x] **Three.js r160** pin + sha256 in cosmic README  
 
 ### Still open (secrets / stores / device)
 
 - [ ] Ship real **audio binaries** (or live CDN files) for offline first-run demos  
-- [ ] Production **StoreKit / Play Billing** + RevenueCat product mapping with real keys  
+- [ ] Production **StoreKit / Play Billing** + RevenueCat product mapping with real keys (**iOS RC purchase path still stubbed** — AS-P1-06 / IMP-03)  
 - [ ] Full **Supabase** magic-link / Google Sign-In (project keys)  
+- [ ] Cross-platform engine goldens (Swift ↔ Kotlin fixture)  
+- [ ] XcodeGen project definition (+ later AstroSleepCore SwiftPM tests)  
 - [ ] Swiss Ephemeris (or equivalent) for production-grade positions  
 - [ ] Cosmic body tour polish / tonight overlay / personal markers  
 - [ ] Device / TestFlight / Play internal testing + store submission  
@@ -420,6 +461,7 @@ python tools/sync_shared.py    # heal: push shared/ sources into platform copies
 - [x] Bedtime notifications + boot reschedule (Android)  
 - [x] Fingerprint golden tests · guest affirmation user_id fix  
 
+
 ---
 
 ## Contributing / development notes
@@ -428,14 +470,17 @@ python tools/sync_shared.py    # heal: push shared/ sources into platform copies
 - Keep engine golden tests green when changing sign/moon math  
 - Do not commit `local.properties`, keystores, xcconfig secrets, or large binary dumps without agreement  
 - Dual-platform changes to shared math should update **both** `AstrologicalEngine` **and** Tag Engine v4 stacks (`PersonalSoundProfile` / `TagEngine` / `ComboComposer`) — never leave iOS and Android engines out of sync  
+- After shared-asset or dimension-weight edits: `python tools/sync_shared.py` then `python tools/check_parity.py`  
+- Reviews under `.agents/reviews/` are **immutable snapshots**; current status is only in [`STATUS.md`](.agents/reviews/STATUS.md)  
 - UI and marks follow [`.agents/DESIGN.md`](.agents/DESIGN.md); do not invent a second palette mid-PR  
 
 ---
 
 ## License
 
-**Proprietary.** All rights reserved.  
-Unauthorized copying, distribution, or commercial use is prohibited.
+**Proprietary.** All rights reserved. See [`LICENSE`](LICENSE).  
+Unauthorized copying, distribution, or commercial use is prohibited.  
+Vendored third-party components (e.g. Three.js under `shared/cosmic-systems/vendor/`) keep their own licenses.
 
 ---
 

@@ -9,21 +9,26 @@ iOS source of truth: `../AstroSleep-iOS/` · plan: `../documentation/ANDROID_POR
 
 ## Status
 
-**Core port + TagEngine v4 + critical bugfixes landed.** See root [README.md](../README.md) and [BUGFIX_SPRINT_NOTES.md](../documentation/BUGFIX_SPRINT_NOTES.md).
+**Core port + TagEngine v4 + critical bugfixes + CI landed.** See root [README.md](../README.md), [BUGFIX_SPRINT_NOTES.md](../documentation/BUGFIX_SPRINT_NOTES.md), and [`.agents/reviews/STATUS.md`](../.agents/reviews/STATUS.md).
 
 | Area | Status |
 |------|--------|
 | TagEngine v4 + ComboComposer | ✅ personalized stacks |
-| AstrologicalEngine | ✅ 13-sign, birth time, moon epoch |
+| AstrologicalEngine | ✅ 13-sign, birth time, moon epoch, full UTC JD |
 | ElementVector presets | ✅ |
 | Room + StorageRepository | ✅ |
-| SoundLibrary (manifest) | ✅ |
+| SoundLibrary (manifest + CDN cache) | ✅ |
 | AppViewModel (score, combo, session) | ✅ |
-| AudioService + PlaybackService FGS | ✅ |
-| RevenueCat / Network / Auth shells | 🟡 |
-| Compose UI (onboarding → tabs) | ✅ |
-| Geocoder / purchase UI | ⏳ |
+| AudioService + PlaybackService FGS | ✅ MediaStyle / MediaSession |
+| Per-layer system Equalizer | ✅ |
+| Affirmations + `user_id` API | ✅ |
+| Geocoding | ✅ |
+| Bedtime notifications + boot reschedule | ✅ |
+| Library (save / play / delete) | ✅ Room UX |
+| Compose UI (onboarding → tabs + Cosmic) | ✅ Digital Sea |
+| RevenueCat / Network / Auth shells | 🟡 production keys + full Supabase still open |
 | Bundled `.m4a` assets | ⏳ (CDN/manifest) |
+| CI unit tests | ✅ GitHub Actions on `main` |
 
 ## Open in Android Studio
 
@@ -55,17 +60,32 @@ Once `sdk.dir` is set and the Gradle wrapper exists:
 
 If the wrapper is missing, open the project once in Android Studio or run `gradle wrapper` with a local Gradle 8.9+ install.
 
+CI runs the same unit-test task on every push/PR (`.github/workflows/ci.yml`).
+
 ## Package map
 
 | Path | Role |
 |------|------|
 | `core/model` | ElementVector, Sound, UserProfile, Combo |
-| `core/engine` | TagEngine, AstrologicalEngine (port in progress) |
+| `core/engine` | TagEngine v4, ComboComposer, AstrologicalEngine |
 | `core/config` | AppConfig / BuildConfig secrets |
-| `service/` | Audio, Auth, Network, RC, … |
-| `ui/` | Compose screens |
-| `data/` | Room (next) |
+| `service/` | Audio, Auth, Network, RC, notifications, geocode |
+| `ui/` | Compose screens (Tonight, Sounds, Library, Cosmos, Settings, …) |
+| `data/` | Room + StorageRepository |
 | `assets/sounds/` | Manifest (+ optional m4a) |
+| `assets/cosmic-systems/` | Bundled 3D sky (synced from `shared/`) |
+
+## Lockstep with iOS
+
+After editing shared assets or the iOS sound manifest (source of truth):
+
+```bash
+# from repo root
+python tools/sync_shared.py
+python tools/check_parity.py
+```
+
+Tag-dimension weights and cosmic-systems bytes must match iOS — CI fails on drift.
 
 ## Security
 
