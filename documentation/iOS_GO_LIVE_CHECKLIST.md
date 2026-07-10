@@ -42,8 +42,8 @@
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 3.1 | `PrivacyInfo.xcprivacy` is present and accurate | 🟢 | Added v3.1; verify against actual API usage |
-| 3.2 | `AstroSleep.entitlements` has all required capabilities | 🟢 | Push, Apple Sign-In, IAP, Associated Domains, Keychain |
+| 3.1 | `PrivacyInfo.xcprivacy` is present and accurate | 🟢 | **Single canonical file**: `Resources/PrivacyInfo.xcprivacy` (divergent root duplicate removed 2026-07-09). Declares EmailAddress, UserID, PurchaseHistory only; verify against `Services/*.swift` before submit |
+| 3.2 | `AstroSleep.entitlements` has all required capabilities | 🟢 | **Single canonical file**: `Supporting Files/AstroSleep.entitlements` (divergent root duplicate removed 2026-07-09). Push, Apple Sign-In, Associated Domains, Keychain. IAP needs no entitlement key |
 | 3.3 | `Info.plist` uses build-setting injection for API keys | 🟢 | `$(SUPABASE_URL)`, `$(SUPABASE_ANON_KEY)`, etc. |
 | 3.4 | `ITSAppUsesNonExemptEncryption = false` is set | 🟢 | Added v3.1 |
 | 3.5 | `NSGenerativeAIDisclosure` is present | 🟢 | Already present |
@@ -51,8 +51,11 @@
 | 3.7 | `NSLocationWhenInUseUsageDescription` is present | 🟢 | For birth city geocoding |
 | 3.8 | App Transport Security allows **HTTPS only** | 🟢 | `NSAllowsArbitraryLoads = false` |
 | 3.9 | **localhost exception** is development-only | 🟢 | `NSExceptionAllowsInsecureHTTPLoads` for localhost |
-| 3.10 | **Privacy Policy URL** is live: `https://astrosleep.app/privacy` | 🔴 | Must be a real, reachable webpage |
+| 3.10 | **Privacy Policy URL** is live: `https://astrosleep.app/privacy` | 🔴 | Must be a real, reachable webpage (set in App Store Connect, not the privacy manifest) |
 | 3.11 | **Terms of Service URL** is live: `https://astrosleep.app/terms` | 🔴 | Must be a real, reachable webpage |
+| 3.12 | Exactly **one** `PrivacyInfo.xcprivacy` + **one** `.entitlements` have target membership when the Xcode project is created | 🔴 | Invariant enforced repo-side by `tools/check_parity.py`; confirm inside Xcode too |
+| 3.13 | `NSPrivacyTrackingDomains` stays **empty** while `NSPrivacyTracking = false` | 🟢 | Listed tracking domains are network-blocked pre-ATT-consent; `api.`/`cdn.astrosleep.app` are functional endpoints and must never be listed here |
+| 3.14 | Re-declare deferred data types **only when the code ships** | 🔴 | CrashData/ProductInteraction when Sentry/PostHog land; app-groups/iCloud entitlements when widgets/backup land; Location types only if lat/lng ever leaves the device (it must not, per design) |
 
 ---
 

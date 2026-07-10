@@ -2,39 +2,36 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <!-- App Groups for data sharing (if needed for widgets) -->
-    <key>com.apple.security.application-groups</key>
-    <array>
-        <string>group.com.astrosleep.app</string>
-    </array>
-    
-    <!-- iCloud for Pro tier backup -->
-    <key>com.apple.developer.icloud-container-identifiers</key>
-    <array>
-        <string>iCloud.com.astrosleep.app</string>
-    </array>
-    <key>com.apple.developer.icloud-services</key>
-    <array>
-        <string>CloudKit</string>
-    </array>
-    
-    <!-- Associated Domains for deep links -->
+    <!--
+      CANONICAL entitlements. Exactly one .entitlements may exist in the iOS tree
+      (enforced by tools/check_parity.py). Contains only capabilities that v1
+      actually ships. See iOS_GO_LIVE_CHECKLIST.md section 3.
+
+      Intentionally deferred until the feature exists:
+      - com.apple.security.application-groups  (widgets / shared containers)
+      - com.apple.developer.icloud-*           (Pro backup via CloudKit)
+      In-App Purchase needs no entitlement key; the capability is implicit for
+      App Store distribution (StoreKit / RevenueCat).
+    -->
+
+    <!-- Push notifications. Keep "development" in source control; Xcode
+         rewrites to "production" on App Store / TestFlight export. -->
+    <key>aps-environment</key>
+    <string>development</string>
+
+    <!-- Universal links -->
     <key>com.apple.developer.associated-domains</key>
     <array>
         <string>applinks:astrosleep.app</string>
     </array>
-    
-    <!-- Sign in with Apple -->
+
+    <!-- Sign in with Apple (AuthService Apple path) -->
     <key>com.apple.developer.applesignin</key>
     <array>
         <string>Default</string>
     </array>
-    
-    <!-- Push Notifications -->
-    <key>aps-environment</key>
-    <string>development</string>
-    
-    <!-- Keychain Sharing -->
+
+    <!-- Keychain access group (auth token storage) -->
     <key>keychain-access-groups</key>
     <array>
         <string>$(AppIdentifierPrefix)com.astrosleep.app</string>
