@@ -6,6 +6,8 @@
 
 <p align="center"><strong>Personalized sleep soundscapes driven by your natal chart, tonight’s sky, and a 12-dimensional sound tag engine.</strong></p>
 
+<p align="center"><a href="https://github.com/nuroctane/ASTROSleep/actions/workflows/ci.yml"><img src="https://github.com/nuroctane/ASTROSleep/actions/workflows/ci.yml/badge.svg" alt="CI" /></a></p>
+
 **Aesthetic:** quiet night, not casino. Deep void field, glass surfaces, indigo + biolume accents (Digital Sea). Birth data stays on device. Restrained motion.
 
 AstroSleep is a dual-platform native app (iOS + Android) that:
